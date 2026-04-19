@@ -1,1 +1,1 @@
-// This file is not used — React app is in TypeScript with Vite
+// This file is not used. React app is in src/main.tsx and components.

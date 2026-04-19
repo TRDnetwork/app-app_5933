@@ -1,1 +1,1 @@
-// No realtime functionality needed — no Supabase or WebSocket usage
+// No realtime functionality needed for this static portfolio site.
