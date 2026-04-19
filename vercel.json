@@ -1,0 +1,83 @@
+{
+  "functions": {
+    "api/contact.ts": {
+      "memory": 1024,
+      "maxDuration": 10,
+      "runtime": "nodejs18.x"
+    },
+    "api/projects.ts": {
+      "memory": 512,
+      "maxDuration": 10,
+      "runtime": "nodejs18.x"
+    },
+    "api/health.ts": {
+      "memory": 512,
+      "maxDuration": 5,
+      "runtime": "nodejs18.x"
+    }
+  },
+  "caching": {
+    "/api/projects*": {
+      "maxAge": 300,
+      "staleWhileRevalidate": 60
+    },
+    "/api/contact*": false,
+    "/api/health*": {
+      "maxAge": 60,
+      "staleWhileRevalidate": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/projects(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, stale-while-revalidate=60"
+        },
+        {
+          "key": "Vary",
+          "value": "Accept-Version"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ]
+}

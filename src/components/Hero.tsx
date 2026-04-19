@@ -1,47 +1,52 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 
-export const Hero: React.FC = () => {
+export const Hero = () => {
   return (
-    <motion.section
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="section text-center py-32"
-      style={{ backgroundColor: '#faf8f5' }}
-      role="banner"
-      aria-label="Hero section featuring Jane Doe, Full-Stack Developer & UI Enthusiast"
+    <section 
+      id="home" 
+      className="section min-h-screen flex items-center justify-center px-4"
+      aria-labelledby="hero-heading"
     >
-      <div className="max-w-3xl mx-auto px-6">
-        <motion.h1
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 leading-tight"
-          style={{ color: '#1a2e1a', fontFamily: 'Fraunces, serif' }}
-          aria-live="polite"
+      <div className="text-center max-w-4xl mx-auto">
+        <motion.h1 
+          id="hero-heading"
+          className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-[#1a2e1a]"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
         >
           Jane Doe
         </motion.h1>
-        <motion.p
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="text-lg sm:text-xl md:text-2xl text-[#4a4538] mb-8"
-          style={{ fontFamily: 'Satoshi, sans-serif' }}
+        <motion.p 
+          className="text-xl sm:text-2xl mb-8 text-[#4a4a4a] font-medium"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
         >
           Full-Stack Developer & UI Enthusiast
         </motion.p>
         <motion.a
           href="#contact"
-          className="btn inline-block"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          aria-label="Contact me - scroll to contact form"
+          className="btn inline-block px-8 py-3 bg-[#e66000] text-white rounded-lg font-medium transition-all duration-300 hover:bg-[#ff8c42] focus:outline-none focus:ring-4 focus:ring-[#e66000]/50 min-h-11"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          aria-label="Contact Me"
         >
           Contact Me
         </motion.a>
       </div>
-    </motion.section>
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        <svg 
+          className="w-6 h-6 text-[#1a2e1a]" 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      </div>
+    </section>
   );
 };
 ---

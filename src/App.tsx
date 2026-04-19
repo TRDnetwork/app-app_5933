@@ -1,66 +1,42 @@
-import React from 'react';
-import { HashRouter, Routes, Route } from 'react-router-dom';
 import { Hero } from './components/Hero';
 import { About } from './components/About';
 import { Projects } from './components/Projects';
 import { ContactForm } from './components/ContactForm';
+import { useEffect } from 'react';
+import { useReducedMotion } from 'framer-motion';
 
-const App: React.FC = () => {
+function App() {
+  const prefersReducedMotion = useReducedMotion();
+
+  // a11y fix: respect user's motion preference
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      document.body.style.setProperty('scroll-behavior', 'auto');
+    }
+  }, [prefersReducedMotion]);
+
   return (
-    <HashRouter>
-      <div className="min-h-screen" style={{ backgroundColor: '#faf8f5' }}>
-        <header className="sticky top-0 z-50 bg-[#faf8f5] shadow-sm" role="banner">
-          <nav
-            className="container mx-auto px-6 py-4"
-            aria-label="Main navigation"
-          >
-            <ul className="flex flex-wrap justify-center gap-x-8 gap-y-4 sm:gap-x-12">
-              {[
-                { href: '#hero', label: 'Home' },
-                { href: '#about', label: 'About' },
-                { href: '#projects', label: 'Projects' },
-                { href: '#contact', label: 'Contact' },
-              ].map((item) => (
-                <li key={item.href}>
-                  <a
-                    href={item.href}
-                    className="font-medium text-[#1a2e1a] hover:text-[#e66000] transition-colors duration-200 text-sm sm:text-base"
-                    aria-current={
-                      window.location.hash === item.href ? 'page' : undefined
-                    }
-                  >
-                    {item.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </header>
+    <div className="min-h-screen scroll-smooth bg-cream">
+      {/* Skip to content link for keyboard users */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 px-4 py-2 bg-[#e66000] text-white rounded-lg transition-all duration-300 min-h-11"
+      >
+        Skip to content
+      </a>
 
-        <main>
-          <Routes>
-            <Route path="/" element={
-              <>
-                <Hero />
-                <About />
-                <Projects />
-                <ContactForm />
-              </>
-            } />
-          </Routes>
-        </main>
-
-        <footer
-          className="py-8 text-center text-[#4a4538] text-sm"
-          style={{ fontFamily: 'Satoshi, sans-serif' }}
-          role="contentinfo"
-        >
-          <p>&copy; {new Date().getFullYear()} Jane Doe. All rights reserved.</p>
-        </footer>
-      </div>
-    </HashRouter>
+      <main id="main-content" role="main">
+        <Hero />
+        <div className="divider" /> {/* a11y fix: visual divider with sufficient contrast */}
+        <About />
+        <div className="divider" /> {/* a11y fix: visual divider with sufficient contrast */}
+        <Projects />
+        <div className="divider" /> {/* a11y fix: visual divider with sufficient contrast */}
+        <ContactForm />
+      </main>
+    </div>
   );
-};
+}
 
 export default App;
 ---

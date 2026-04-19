@@ -1,40 +1,35 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 
-export const About: React.FC = () => {
+export const About = () => {
   return (
-    <motion.section
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true, margin: "-100px" }}
-      className="py-24 px-6"
-      id="about"
-      role="region"
-      aria-labelledby="about-title"
+    <section 
+      id="about" 
+      className="section py-20 px-4"
+      aria-labelledby="about-heading"
     >
-      <div className="container mx-auto max-w-4xl">
-        <motion.h2
-          id="about-title"
-          initial={{ y: 20, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
+      <div className="max-w-3xl mx-auto text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
-          className="text-3xl sm:text-4xl font-semibold mb-8 text-center"
-          style={{ color: '#1a2e1a', fontFamily: 'Fraunces, serif' }}
+          transition={{ duration: 0.6 }}
         >
-          About Me
-        </motion.h2>
-        <motion.p
-          initial={{ y: 20, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ delay: 0.2 }}
-          className="text-base sm:text-lg md:text-xl text-[#4a4538] max-w-3xl mx-auto text-center leading-relaxed"
-          style={{ fontFamily: 'Satoshi, sans-serif' }}
-        >
-          I'm a passionate full-stack developer with expertise in React, Node.js, and cloud infrastructure. I love building scalable applications with clean, maintainable code and intuitive user experiences.
-        </motion.p>
+          <h2 
+            id="about-heading"
+            className="text-3xl md:text-4xl font-bold mb-4 text-[#1a2e1a]"
+          >
+            About Me
+          </h2>
+          <div className="divider mx-auto mb-8" /> {/* a11y fix: visual divider with sufficient contrast */}
+          <p className="text-lg text-[#4a4a4a] leading-relaxed">
+            I'm a full-stack developer with over 5 years of experience building scalable web applications. 
+            I specialize in React, Node.js, and cloud architecture, with a strong focus on creating intuitive 
+            user experiences and robust backend systems. When I'm not coding, you can find me hiking or 
+            experimenting with new recipes in the kitchen.
+          </p>
+        </motion.div>
       </div>
-    </motion.section>
+    </section>
   );
 };
 ---

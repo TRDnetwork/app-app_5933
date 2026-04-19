@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Redis } from '@upstash/redis';
 
-// Initialize Redis for caching
-const redis = Redis.fromEnv();
+// This is an edge function that would run at the edge network
+// In Vercel, you would place this in /api/edge-projects and add the config below
+// export const config = { runtime: 'edge' };
 
 // Project data - in a real app, this would come from a database
 const PROJECTS = [
@@ -32,9 +32,9 @@ const PROJECTS = [
   }
 ];
 
-// Cache configuration
-const CACHE_TTL = 300; // 5 minutes in seconds
-const CACHE_KEY = 'projects:all';
+// Cache for edge function - in a real edge runtime, you might use a different caching strategy
+const cache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 300000; // 5 minutes in milliseconds
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // API Versioning
@@ -45,70 +45,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Warning', '199 - "API v1 is deprecated. Please upgrade to v2"');
   }
 
-  // Set cache control headers for optimal caching
-  // PERF: Cache-Control headers enable client and proxy caching
-  res.setHeader('Cache-Control', `public, max-age=300, stale-while-revalidate=60`);
+  // Set cache control headers for edge caching
+  // PERF: Edge caching reduces latency by serving content from nearest location
+  res.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=60');
   res.setHeader('Vary', 'Accept-Version');
+  res.setHeader('X-Edge-Cache', 'HIT'); // Will be set to MISS if cache is stale
 
-  // Handle different HTTP methods
-  switch (req.method) {
-    case 'GET':
-      return handleGet(req, res, apiVersion);
-    
-    default:
-      res.setHeader('Allow', 'GET');
-      return res.status(405).json({ 
-        error: 'Method not allowed',
-        version: apiVersion 
-      });
-  }
-}
-
-async function handleGet(req: VercelRequest, res: VercelResponse, apiVersion: string) {
   // Extract pagination parameters
-  // PERF: Cursor-based pagination for efficient data retrieval
   const { cursor, limit = '20' } = req.query;
   const limitNum = Math.min(parseInt(limit as string, 10), 100); // Max 100 items
   const cursorStr = cursor as string | undefined;
 
   try {
     // Try to get data from cache first
-    // PERF: In-memory cache reduces database load and improves response times
-    let cachedData = null;
-    try {
-      cachedData = await redis.get<{ data: typeof PROJECTS; cursor: string | null; timestamp: number }>(CACHE_KEY);
-    } catch (error) {
-      console.warn('Redis get error:', error);
-      // Continue with fresh data if cache is unavailable
-    }
-
+    // PERF: In-memory cache at edge reduces origin requests and improves performance
+    const cacheKey = `projects:${cursorStr || 'start'}:${limitNum}:${apiVersion}`;
+    const cached = cache.get(cacheKey);
     let projectsData: typeof PROJECTS;
     let isCacheHit = false;
 
-    if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL * 1000) {
-      projectsData = cachedData.data;
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      projectsData = cached.data;
       isCacheHit = true;
     } else {
       // Simulate database query with sorting
-      // PERF: Sort data by updatedAt for consistent pagination
       projectsData = [...PROJECTS].sort((a, b) => 
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
 
-      // Cache the fresh data
-      try {
-        await redis.set(CACHE_KEY, {
-          data: projectsData,
-          timestamp: Date.now()
-        }, { ex: CACHE_TTL });
-      } catch (error) {
-        console.warn('Redis set error:', error);
-        // Continue even if caching fails
+      // Cache the result
+      cache.set(cacheKey, {
+        data: projectsData,
+        timestamp: Date.now()
+      });
+
+      // Clean up old cache entries
+      if (Math.random() < 0.1) { // 10% chance
+        const now = Date.now();
+        for (const [key, value] of cache.entries()) {
+          if (now - value.timestamp > CACHE_TTL * 2) {
+            cache.delete(key);
+          }
+        }
       }
+
+      res.setHeader('X-Edge-Cache', 'MISS');
     }
 
     // Apply cursor-based pagination
-    // PERF: Cursor-based pagination avoids OFFSET issues with large datasets
+    // PERF: Cursor-based pagination is more efficient than offset-based for large datasets
     let startIndex = 0;
     if (cursorStr) {
       const cursorIndex = projectsData.findIndex(p => p.id === cursorStr);
@@ -123,7 +108,6 @@ async function handleGet(req: VercelRequest, res: VercelResponse, apiVersion: st
       : null;
 
     // Set total count header
-    // PERF: Total count header helps clients with UI pagination controls
     res.setHeader('X-Total-Count', projectsData.length.toString());
     res.setHeader('X-Returned-Count', paginatedProjects.length.toString());
 
@@ -137,7 +121,7 @@ async function handleGet(req: VercelRequest, res: VercelResponse, apiVersion: st
       version: apiVersion
     });
   } catch (error) {
-    console.error('Error in projects handler:', error);
+    console.error('Error in edge projects handler:', error);
     return res.status(500).json({ 
       error: 'Internal server error',
       version: apiVersion 
@@ -145,5 +129,8 @@ async function handleGet(req: VercelRequest, res: VercelResponse, apiVersion: st
   }
 }
 
-// PERF: Connection pooling is handled by Upstash Redis automatically
-// The Redis client maintains an optimal connection pool for Vercel serverless functions
+// This config would enable the edge runtime in Vercel
+// export const config = { runtime: 'edge' };
+
+// PERF: Edge functions run closer to users, reducing latency for read operations
+// This is particularly beneficial for the projects endpoint which is read frequently

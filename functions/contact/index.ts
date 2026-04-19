@@ -1,2 +1,2 @@
-// This file is not needed — Vercel serverless function at api/contact.ts handles the logic.
-// Supabase Edge Functions are not used in this architecture.
+-- Not applicable — contact form processing is handled by Vercel serverless function (api/contact.ts), not Supabase Edge Function.
+-- Email delivery via Resend and rate limiting via Upstash Redis are managed in the Vercel runtime.
