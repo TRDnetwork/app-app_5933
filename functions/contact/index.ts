@@ -1,2 +1,1 @@
--- Not applicable — contact form processing is handled by Vercel serverless function (api/contact.ts), not Supabase Edge Function.
--- Email delivery via Resend and rate limiting via Upstash Redis are managed in the Vercel runtime.
+-- Not applicable — contact form handled by Vercel serverless function (api/contact.ts), not Supabase Edge Function

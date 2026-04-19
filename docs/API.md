@@ -1,22 +1,37 @@
 # API Documentation
 
+## API Versioning
+
+All API endpoints follow semantic versioning with the `/api/v{version}/` prefix. Clients can also specify the version using the `Accept-Version` header.
+
+### Version Support
+- `v1` (current): Fully supported
+- `v0` (deprecated): Will be sunset on 2024-12-31
+
+### Version Headers
+When using a deprecated version, the API returns:
+- `Deprecation: true`
+- `Sunset: 2024-12-31` (RFC 7231)
+- `Link: </api/v1/{endpoint}>; rel="successor-version"`
+
 ## Contact Form API
 
 The contact form is handled by a Vercel serverless function that processes submissions, validates input, enforces rate limiting, and sends emails via Resend.
 
-### `POST /api/contact`
+### `POST /api/v1/contact`
 
 Sends a contact form submission via email to the site owner.
 
 #### Request
 
-**URL**: `https://app_5933.vercel.app/api/contact`
+**URL**: `https://app_5933.vercel.app/api/v1/contact`
 
 **Method**: `POST`
 
 **Headers**:
 ```http
 Content-Type: application/json
+Accept-Version: v1
 ```
 
 **Body**:
@@ -42,7 +57,7 @@ Content-Type: application/json
 ```json
 {
   "success": true,
-  "id": "email_12345"
+  "version": "v1"
 }
 ```
 
@@ -73,29 +88,25 @@ or
 }
 ```
 
-**Rate Limit Exceeded (Logged but not blocked)**:
-The API uses a fail-open policy for rate limiting. When the limit is exceeded, the request is logged but still processed.
+#### Response Headers
+
+| Header | Description |
+|--------|-------------|
+| `X-API-Version` | Current API version |
+| `X-RateLimit-Limit` | Total requests allowed per hour |
+| `X-RateLimit-Remaining` | Remaining requests in current window |
+| `X-RateLimit-Reset` | Timestamp when rate limit resets |
+| `Retry-After` | Seconds to wait before retrying after rate limit |
 
 #### Example Usage
 
-**cURL**:
-```bash
-curl -X POST https://app_5933.vercel.app/api/contact \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "John Doe",
-    "email": "john@example.com",
-    "message": "Hello, I would like to discuss a project.",
-    "bot-field": ""
-  }'
-```
-
 **JavaScript Fetch**:
 ```javascript
-const response = await fetch('/api/contact', {
+const response = await fetch('/api/v1/contact', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
+    'Accept-Version': 'v1'
   },
   body: JSON.stringify({
     name: 'John Doe',
@@ -105,108 +116,234 @@ const response = await fetch('/api/contact', {
   }),
 });
 
+// Check rate limit headers
+const remaining = response.headers.get('X-RateLimit-Remaining');
+const reset = response.headers.get('X-RateLimit-Reset');
+
+if (response.status === 429) {
+  const retryAfter = response.headers.get('Retry-After');
+  console.log(`Rate limited. Retry after ${retryAfter} seconds.`);
+}
+
 const data = await response.json();
-if (data.success) {
-  console.log('Message sent successfully');
-} else {
-  console.error('Error:', data.error);
+```
+
+## Projects API
+
+Retrieves featured projects with cursor-based pagination and caching.
+
+### `GET /api/v1/projects`
+
+Returns a paginated list of featured projects.
+
+#### Request
+
+**URL**: `https://app_5933.vercel.app/api/v1/projects?limit=20&cursor=0`
+
+**Method**: `GET`
+
+**Headers**:
+```http
+Accept-Version: v1
+```
+
+**Query Parameters**:
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `limit` | number | No | 20 | Number of items to return (max 100) |
+| `cursor` | string | No | 0 | Cursor for pagination |
+
+#### Response
+
+**Success (200 OK)**:
+```json
+{
+  "data": [
+    {
+      "id": "string",
+      "title": "string",
+      "description": "string",
+      "tech": ["string"],
+      "created_at": "string",
+      "updated_at": "string"
+    }
+  ],
+  "next_cursor": "string",
+  "has_more": true,
+  "total_count": 3,
+  "query": {
+    "limit": 20,
+    "cursor": "0"
+  }
 }
 ```
 
-#### Security Features
+**Response Headers**:
+| Header | Description |
+|--------|-------------|
+| `X-API-Version` | Current API version |
+| `X-Cache` | Cache status (HIT, MISS, or STALE) |
+| `Cache-Control` | Caching instructions (max-age=300) |
 
-1. **Honeypot Protection**:
-   - Hidden `bot-field` detects automated submissions
-   - If filled, request is silently accepted but logged
-   - Prevents spam without user friction
+#### Example Usage
 
-2. **Input Validation**:
-   - All fields required
-   - Email format validated with regex
-   - Inputs sanitized with `isomorphic-dompurify`
+```javascript
+async function getProjects(limit = 20, cursor = '0') {
+  const response = await fetch(`/api/v1/projects?limit=${limit}&cursor=${cursor}`, {
+    headers: {
+      'Accept-Version': 'v1'
+    }
+  });
+  
+  // Check cache status
+  const cacheStatus = response.headers.get('X-Cache');
+  console.log(`Cache: ${cacheStatus}`);
+  
+  const data = await response.json();
+  return data;
+}
 
-3. **Rate Limiting**:
-   - 5 submissions per hour per IP address
-   - Uses Upstash Redis with sliding window algorithm
-   - Identifier: `x-forwarded-for` header or 'anonymous'
-   - Fail-open policy: logs warnings but allows submission if Redis fails
+// Usage
+let cursor = '0';
+let allProjects = [];
 
-4. **Email Security**:
-   - API key stored in environment variables
-   - No client-side exposure of credentials
-   - Verified domain recommended for better deliverability
-
-#### Error Handling
-
-| Error Type | Status Code | Response | Logging |
-|------------|-------------|----------|---------|
-| Missing fields | 400 | "Missing required fields" | No |
-| Invalid email | 400 | "Invalid email format" | No |
-| Method not POST | 405 | "Method not allowed" | No |
-| Resend API error | 500 | "Failed to send email" | Yes (Sentry) |
-| Unexpected error | 500 | "Internal server error" | Yes (Sentry) |
-| Rate limit exceeded | 200 | Success (fail-open) | Yes (console.warn) |
-| Honeypot triggered | 200 | Success (silent) | Yes (console.log) |
-
-#### Email Templates
-
-The API uses two email templates:
-
-1. **Contact Notification** (`ContactNotificationEmail.tsx`):
-   - Sent to site owner
-   - Contains sender's name, email, and message
-   - HTML formatted with brand styling
-
-2. **Contact Confirmation** (Optional):
-   - Can be enabled to send auto-reply to sender
-   - Thanks user for their message
-   - Sets expectations for response time
-
-#### Rate Limiting Details
-
-```typescript
-const ratelimit = rateLimit({
-  redis: Redis.fromEnv(),
-  limiter: rateLimit.slidingWindow(5, '3600s'), // 5 requests per 3600 seconds (1 hour)
-});
+do {
+  const result = await getProjects(20, cursor);
+  allProjects = [...allProjects, ...result.data];
+  cursor = result.next_cursor;
+} while (result.has_more);
 ```
 
-- **Storage**: Upstash Redis
+## Health Check API
+
+Monitors the health of the application and its dependencies.
+
+### `GET /api/v1/health`
+
+Basic health check endpoint.
+
+#### Response
+```json
+{
+  "status": "ok",
+  "timestamp": "2023-01-01T00:00:00.000Z",
+  "version": "1.0.0",
+  "uptime": 123456,
+  "api_version": "v1"
+}
+```
+
+### `GET /api/v1/health/db`
+
+Checks Redis connection health.
+
+### `GET /api/v1/health/deps`
+
+Comprehensive health check for all dependencies.
+
+#### Response
+```json
+{
+  "status": "ok",
+  "timestamp": "2023-01-01T00:00:00.000Z",
+  "services": {
+    "resend": true,
+    "redis": true
+  },
+  "version": "v1"
+}
+```
+
+## Rate Limiting
+
+The API implements rate limiting to prevent abuse:
+
+- **Endpoint**: `/api/v1/contact`
+- **Limit**: 5 requests per hour per IP address
 - **Algorithm**: Sliding window
-- **Identifier**: IP address from `x-forwarded-for` header
-- **Behavior**: Fail-open (allows requests if Redis is unavailable)
+- **Identification**: IP address + email domain
+- **Behavior**: Fail-open (logs warnings but allows submission if Redis fails)
 
-#### Monitoring
+When rate limit is exceeded:
+- Status: 429 Too Many Requests
+- Header: `Retry-After: {seconds}`
+- Header: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 
-All API interactions are monitored through:
-- **Vercel Logs**: Function execution and errors
-- **Sentry**: Detailed error tracking and performance monitoring
-- **PostHog**: User flow analytics
-- **Resend Dashboard**: Email delivery status
-- **Upstash Console**: Rate limiting metrics
+## Caching Strategy
 
-#### Deployment Configuration
+The API implements a multi-layer caching strategy:
 
-The API is deployed as a Vercel serverless function with the following settings:
+### In-Memory Caching (Redis)
+- **TTL**: 300 seconds (5 minutes)
+- **Eviction**: LRU (Least Recently Used)
+- **Pattern**: `projects:v{version}:limit:{limit}:cursor:{cursor}`
+- **Headers**: `Cache-Control: public, max-age=300`
+
+### Stale-While-Revalidate
+- When cache expires, stale content is served while background revalidation occurs
+- Header: `Cache-Control: public, max-age=300, stale-while-revalidate=86400`
+
+### Cache Invalidation
+- Manual invalidation via webhook
+- Automatic invalidation on content updates
+- Pattern: `projects:*` (wildcard matching)
+
+## Edge Functions
+
+Latency-sensitive operations are handled at the edge:
+
+### Static Asset Serving
+- Geolocation-based routing hints
+- Long-term caching (1 year)
+- Headers: `Cache-Control: public, max-age=31536000, immutable`
+
+### Edge Health Checks
+- Faster regional outage detection
+- Lower latency responses
+- Headers: `X-Edge-Location`
+
+## Security
+
+### Rate Limiting Headers
+- `X-RateLimit-Limit`: Total allowed requests
+- `X-RateLimit-Remaining`: Remaining requests
+- `X-RateLimit-Reset`: Reset timestamp
+- `Retry-After`: Seconds to wait after rate limit
+
+### Cache Headers
+- `X-Cache`: HIT, MISS, or STALE
+- `Cache-Control`: Caching instructions
+- `Vary`: Vary by Accept-Encoding
+
+### Security Headers
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+
+## Error Handling
+
+| Error Type | Status Code | Response | Headers |
+|------------|-------------|----------|---------|
+| Missing fields | 400 | "Missing required fields" | - |
+| Invalid email | 400 | "Invalid email format" | - |
+| Method not POST | 405 | "Method not allowed" | - |
+| Rate limit exceeded | 429 | "Too many requests" | `Retry-After` |
+| Redis error | 200 (fail-open) | Success | Console warning |
+| Honeypot triggered | 200 | Success (silent) | Console log |
+| Unexpected error | 500 | "Internal server error" | Sentry logging |
+
+## Deployment Configuration
 
 ```json
 {
-  "maxDuration": 10,
   "memory": 1024,
-  "region": "auto"
+  "maxDuration": 10,
+  "region": "auto",
+  "edgeNetwork": true
 }
 ```
 
 - **Cold start optimized**: Minimal dependencies
-- **No caching**: Each request processed independently
-- **Secure headers**: X-Frame-Options, X-Content-Type-Options, Referrer-Policy
-
-#### Health Check
-
-The API includes built-in health monitoring:
-- Redis connection status
-- Resend API availability
-- Environment variable validation
-- Input sanitization integrity
-
-Health checks are automatically performed on each deployment and can be manually triggered for debugging.
+- **Caching**: Configured in vercel.json
+- **Security headers**: Enforced via routing rules
+- **Edge functions**: Enabled for global distribution

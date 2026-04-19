@@ -1,83 +1,130 @@
 {
-  "functions": {
-    "api/contact.ts": {
-      "memory": 1024,
-      "maxDuration": 10,
-      "runtime": "nodejs18.x"
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/contact.ts",
+      "use": "@vercel/node",
+      "config": {
+        "memory": 1024,
+        "maxDuration": 10,
+        "includeFiles": ["src/emails/**"]
+      }
     },
-    "api/projects.ts": {
-      "memory": 512,
-      "maxDuration": 10,
-      "runtime": "nodejs18.x"
+    {
+      "src": "api/projects.ts",
+      "use": "@vercel/node",
+      "config": {
+        "memory": 512,
+        "maxDuration": 5,
+        "includeFiles": ["src/emails/**"]
+      }
     },
-    "api/health.ts": {
-      "memory": 512,
-      "maxDuration": 5,
-      "runtime": "nodejs18.x"
+    {
+      "src": "api/health.ts",
+      "use": "@vercel/node",
+      "config": {
+        "memory": 256,
+        "maxDuration": 3
+      }
     }
-  },
+  ],
+  "routes": [
+    {
+      "src": "/api/v1/contact",
+      "dest": "api/contact.ts",
+      "methods": ["POST"],
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block"
+      }
+    },
+    {
+      "src": "/api/v1/projects",
+      "dest": "api/projects.ts",
+      "methods": ["GET"],
+      "headers": {
+        "Cache-Control": "public, max-age=300",
+        "Content-Type": "application/json",
+        "X-Content-Type-Options": "nosniff"
+      }
+    },
+    {
+      "src": "/api/v1/health",
+      "dest": "api/health.ts",
+      "methods": ["GET"],
+      "headers": {
+        "Cache-Control": "public, max-age=10",
+        "Content-Type": "application/json"
+      }
+    },
+    {
+      "src": "/api/v1/health/db",
+      "dest": "api/health.ts",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/api/v1/health/deps",
+      "dest": "api/health.ts",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/api/health",
+      "dest": "/api/v1/health",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/api/projects",
+      "dest": "/api/v1/projects",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/api/contact",
+      "dest": "/api/v1/contact",
+      "methods": ["POST"]
+    },
+    // Versioned API routes
+    {
+      "src": "/api/v([0-9]+)/contact",
+      "dest": "api/contact.ts",
+      "methods": ["POST"]
+    },
+    {
+      "src": "/api/v([0-9]+)/projects",
+      "dest": "api/projects.ts",
+      "methods": ["GET"]
+    },
+    {
+      "src": "/api/v([0-9]+)/health",
+      "dest": "api/health.ts",
+      "methods": ["GET"]
+    },
+    // Static assets with long-term caching
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|webp|svg|ico|woff|woff2|ttf|eot))$",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "Vary": "Accept-Encoding"
+      }
+    },
+    // Favicon and manifest
+    {
+      "src": "/(favicon.ico|manifest.json|robots.txt|sitemap.xml)",
+      "headers": {
+        "Cache-Control": "public, max-age=86400"
+      }
+    }
+  ],
   "caching": {
-    "/api/projects*": {
+    "/api/v1/projects": {
       "maxAge": 300,
-      "staleWhileRevalidate": 60
+      "staleWhileRevalidate": 86400
     },
-    "/api/contact*": false,
-    "/api/health*": {
-      "maxAge": 60,
-      "staleWhileRevalidate": 30
+    "/api/v1/health": {
+      "maxAge": 10
     }
   },
-  "headers": [
-    {
-      "source": "/api/projects(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=300, stale-while-revalidate=60"
-        },
-        {
-          "key": "Vary",
-          "value": "Accept-Version"
-        }
-      ]
-    },
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        }
-      ]
-    }
-  ]
+  "edgeNetwork": true,
+  "regions": ["auto"]
 }

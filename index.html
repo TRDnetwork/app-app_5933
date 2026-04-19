@@ -5,61 +5,74 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dev Portfolio</title>
-    <meta name="description" content="A responsive personal portfolio website for a full-stack developer." />
-    <script>
-      // Extend Tailwind config
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              bg: '#faf8f5',
-              surface: '#f5f3f0',
-              text: '#1a2e1a',
-              'text-dim': '#4a4a4a',
-              accent: '#e66000',
-              'accent-alt': '#ff8c42',
-            },
-            fontFamily: {
-              display: ['Fraunces', 'serif'],
-              body: ['Satoshi', 'sans-serif'],
-            },
-            letterSpacing: {
-              display: '-0.05em',
-            },
-          },
-        },
+    <script type="module">
+      // Inline Tailwind config with extended theme
+      document.querySelector('script[type="module"]').insertAdjacentHTML = function() {};
+      window.tailwind = {
+        config: {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              colors: {
+                bg: '#faf8f5',
+                surface: '#e9e5e0',
+                text: '#1a2e1a',
+                'text-dim': '#4a403a',
+                accent: '#e66000',
+                'accent-alt': '#ff8c42'
+              },
+              fontFamily: {
+                display: ['Fraunces', 'serif'],
+                body: ['Satoshi', 'sans-serif']
+              },
+              letterSpacing: {
+                '-tight': '-0.05em'
+              }
+            }
+          }
+        }
       };
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700&family=Satoshi:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
+    <script>
+      tailwind.config = window.tailwind.config;
+    </script>
     <style>
       body {
-        @apply bg-bg text-text font-body leading-relaxed;
-        font-family: var(--font-body);
+        background-color: #faf8f5;
+        color: #1a2e1a;
+        font-family: Satoshi, sans-serif;
+        margin: 0;
+        min-height: 100vh;
       }
-      h1, h2, h3, h4, h5, h6 {
-        @apply font-display tracking-display;
-        font-family: var(--font-display);
+      h1, h2, h3 {
+        font-family: Fraunces, serif;
         letter-spacing: -0.05em;
       }
       .divider {
-        @apply border-t border-accent opacity-30 my-12;
+        height: 1px;
+        background: linear-gradient(to right, transparent, rgba(230, 96, 0, 0.3), transparent);
+        margin: 2rem 0;
       }
       .container {
-        @apply max-w-5xl mx-auto px-6 py-16;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
       }
       .hover-lift {
-        @apply transition-transform duration-300 hover:-translate-y-2;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
       }
-      .focus-outline {
-        @apply focus:outline-none focus:ring-2 focus:ring-accent focus:ring-opacity-50;
+      .hover-lift:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 10px 20px rgba(26, 46, 26, 0.1);
+      }
+      .focus-outline:focus {
+        outline: 2px solid #e66000;
+        outline-offset: 2px;
       }
     </style>
   </head>
-  <body class="bg-bg text-text">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

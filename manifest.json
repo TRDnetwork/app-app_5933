@@ -1,7 +1,7 @@
 {
   "name": "Dev Portfolio",
-  "short_name": "Portfolio",
-  "description": "A responsive personal portfolio website for a full-stack developer.",
+  "short_name": "Dev Portfolio",
+  "description": "A personal portfolio website for a full-stack developer with contact form, project showcase, and responsive design.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf8f5",

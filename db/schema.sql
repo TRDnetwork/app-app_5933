@@ -1,3 +1,3 @@
 -- No database required — all functionality is client-side or handled by Vercel serverless functions.
--- Contact form uses Resend + Upstash Redis (via API Integration Agent) for email and rate limiting.
--- Supabase is not used in this stack.
+-- Contact form submissions are processed by api/contact.ts using Resend for email delivery and Upstash Redis for rate limiting.
+-- No Supabase tables, RLS policies, storage, or edge functions are needed.
