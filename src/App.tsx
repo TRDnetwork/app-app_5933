@@ -1,42 +1,37 @@
+import { useEffect } from 'react';
 import { Hero } from './components/Hero';
 import { About } from './components/About';
 import { Projects } from './components/Projects';
 import { ContactForm } from './components/ContactForm';
-import { useEffect } from 'react';
-import { useReducedMotion } from 'framer-motion';
+import { Header } from './components/Header';
 
-function App() {
-  const prefersReducedMotion = useReducedMotion();
-
-  // a11y fix: respect user's motion preference
+export default function App() {
   useEffect(() => {
-    if (prefersReducedMotion) {
-      document.body.style.setProperty('scroll-behavior', 'auto');
-    }
-  }, [prefersReducedMotion]);
+    // Add smooth scrolling behavior
+    document.documentElement.style.scrollBehavior = 'smooth';
+    
+    return () => {
+      document.documentElement.style.scrollBehavior = 'auto';
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen scroll-smooth bg-cream">
-      {/* Skip to content link for keyboard users */}
-      <a 
-        href="#main-content" 
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-50 px-4 py-2 bg-[#e66000] text-white rounded-lg transition-all duration-300 min-h-11"
+    <>
+      <Header />
+      <main 
+        id="main-content" 
+        className="min-h-screen scroll-smooth bg-bg"
+        role="main"
       >
-        Skip to content
-      </a>
-
-      <main id="main-content" role="main">
         <Hero />
-        <div className="divider" /> {/* a11y fix: visual divider with sufficient contrast */}
+        <div className="divider"></div>
         <About />
-        <div className="divider" /> {/* a11y fix: visual divider with sufficient contrast */}
+        <div className="divider"></div>
         <Projects />
-        <div className="divider" /> {/* a11y fix: visual divider with sufficient contrast */}
+        <div className="divider"></div>
         <ContactForm />
       </main>
-    </div>
+    </>
   );
 }
-
-export default App;
 ---

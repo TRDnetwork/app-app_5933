@@ -5,62 +5,61 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dev Portfolio</title>
-    <meta name="description" content="A personal portfolio website for a full-stack developer." />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Satoshi:wght@400;500;700&display=swap"
-      rel="stylesheet"
-    />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="description" content="A responsive personal portfolio website for a full-stack developer." />
     <script>
+      // Extend Tailwind config
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              'cream': '#faf8f5',
-              'dark-green': '#1a2e1a',
-              'orange-accent': '#e66000',
-              'orange-alt': '#ff8c42',
-              'surface': '#e9e5e0',
-              'text-dim': '#4a4035'
+              bg: '#faf8f5',
+              surface: '#f5f3f0',
+              text: '#1a2e1a',
+              'text-dim': '#4a4a4a',
+              accent: '#e66000',
+              'accent-alt': '#ff8c42',
             },
             fontFamily: {
               display: ['Fraunces', 'serif'],
-              body: ['Satoshi', 'sans-serif']
+              body: ['Satoshi', 'sans-serif'],
             },
             letterSpacing: {
-              tight: '-0.05em'
-            }
-          }
-        }
+              display: '-0.05em',
+            },
+          },
+        },
       };
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;700&family=Satoshi:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       body {
-        background-color: #faf8f5;
-        color: #1a2e1a;
-        font-family: 'Satoshi', sans-serif;
-        line-height: 1.6;
-        margin: 0;
-        padding: 0;
+        @apply bg-bg text-text font-body leading-relaxed;
+        font-family: var(--font-body);
       }
-      h1, h2, h3 {
-        font-family: 'Fraunces', serif;
+      h1, h2, h3, h4, h5, h6 {
+        @apply font-display tracking-display;
+        font-family: var(--font-display);
         letter-spacing: -0.05em;
       }
       .divider {
-        border-top: 1px solid #e66000;
-        margin: 2rem 0;
+        @apply border-t border-accent opacity-30 my-12;
       }
       .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 1.5rem;
+        @apply max-w-5xl mx-auto px-6 py-16;
+      }
+      .hover-lift {
+        @apply transition-transform duration-300 hover:-translate-y-2;
+      }
+      .focus-outline {
+        @apply focus:outline-none focus:ring-2 focus:ring-accent focus:ring-opacity-50;
       }
     </style>
   </head>
-  <body class="bg-cream text-dark-green">
+  <body class="bg-bg text-text">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

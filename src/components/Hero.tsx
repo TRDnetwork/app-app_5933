@@ -1,50 +1,47 @@
 import { motion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 
 export const Hero = () => {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <section 
       id="home" 
-      className="section min-h-screen flex items-center justify-center px-4"
-      aria-labelledby="hero-heading"
+      className="section min-h-screen flex items-center justify-center text-center px-4 pt-safe pb-safe"
+      role="region" 
+      aria-label="Hero section featuring developer introduction"
     >
-      <div className="text-center max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <motion.h1 
-          id="hero-heading"
-          className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 text-[#1a2e1a]"
+          className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 text-dark-green font-display tracking-tight"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.8 }}
+          aria-labelledby="hero-title"
         >
-          Jane Doe
+          <span id="hero-title">Jane Doe</span>
         </motion.h1>
         <motion.p 
-          className="text-xl sm:text-2xl mb-8 text-[#4a4a4a] font-medium"
+          className="text-xl sm:text-2xl mb-8 text-text-dim font-body"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          transition={{ duration: prefersReducedMotion ? 0 : 0.8, delay: prefersReducedMotion ? 0 : 0.2 }}
+          aria-describedby="hero-subtitle"
         >
-          Full-Stack Developer & UI Enthusiast
+          <span id="hero-subtitle">Full-Stack Developer & UI Enthusiast</span>
         </motion.p>
         <motion.a
           href="#contact"
-          className="btn inline-block px-8 py-3 bg-[#e66000] text-white rounded-lg font-medium transition-all duration-300 hover:bg-[#ff8c42] focus:outline-none focus:ring-4 focus:ring-[#e66000]/50 min-h-11"
+          className="btn inline-block px-8 py-3 bg-accent text-white rounded-lg font-semibold hover:bg-accent-alt transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-opacity-50 tap-target"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8, delay: 0.6 }}
-          aria-label="Contact Me"
+          transition={{ duration: prefersReducedMotion ? 0 : 0.8, delay: prefersReducedMotion ? 0 : 0.6 }}
+          role="button"
+          tabIndex={0}
+          aria-label="Contact me to discuss opportunities"
         >
           Contact Me
         </motion.a>
-      </div>
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-        <svg 
-          className="w-6 h-6 text-[#1a2e1a]" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
       </div>
     </section>
   );

@@ -1,96 +1,83 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Redis } from '@upstash/redis';
 import { Resend } from 'resend';
-import { Ratelimit } from '@upstash/ratelimit';
 
 // Initialize clients
 const redis = Redis.fromEnv();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Initialize rate limiter for health checks (higher limit)
-const healthRatelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(60, '1 m'), // 60 requests per minute
-  prefix: 'health-ratelimit',
-});
-
 const VERSION = '1.0.0';
 const START_TIME = Date.now();
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // API VERSIONING
-  const apiVersion = req.headers['accept-version'] || 'v1';
-  res.setHeader('X-API-Version', apiVersion);
-  
-  // Apply rate limiting to health checks to prevent abuse
-  const identifier = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-  const { success } = await healthRatelimit.limit(identifier);
-  
-  if (!success) {
-    return res.status(429).json({ 
-      error: 'Rate limit exceeded for health checks' 
-    });
-  }
-
   const { pathname } = req;
+
+  // API VERSIONING: Support versioning in health check
+  const requestedVersion = req.headers['accept-version'] || '1.0';
 
   switch (pathname) {
     case '/api/health':
-      return handleBasicHealth(req, res);
+      return handleBasicHealth(req, res, requestedVersion);
     case '/api/health/db':
-      return handleDbHealth(req, res);
+      return handleDbHealth(req, res, requestedVersion);
     case '/api/health/deps':
-      return handleDepsHealth(req, res);
+      return handleDepsHealth(req, res, requestedVersion);
     default:
-      res.setHeader('Cache-Control', 'no-store');
-      return res.status(404).json({ error: 'Not found' });
+      return res.status(404).json({ 
+        error: 'Not found',
+        version: requestedVersion
+      });
   }
 }
 
-async function handleBasicHealth(req: VercelRequest, res: VercelResponse) {
-  // CACHING: Cache basic health check for 10 seconds to reduce load
+async function handleBasicHealth(req: VercelRequest, res: VercelResponse, version: string) {
+  // CACHING: Cache health check responses for 10 seconds to reduce load
   res.setHeader('Cache-Control', 'public, max-age=10');
-  res.setHeader('X-Health-Cache', 'true');
   
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    version: VERSION,
+    version: version,
     uptime: Date.now() - START_TIME,
-    version: req.headers['accept-version'] || 'v1'
+    // Include instance information for debugging
+    instance: process.env.VERCEL_URL || 'localhost'
   });
 }
 
-async function handleDbHealth(req: VercelRequest, res: VercelResponse) {
+async function handleDbHealth(req: VercelRequest, res: VercelResponse, version: string) {
   try {
     // Test Redis connection with a simple ping
     const result = await redis.ping();
     
     if (result === 'PONG') {
-      // CACHING: Cache database health for 30 seconds
-      res.setHeader('Cache-Control', 'public, max-age=30');
+      // CACHING: Set cache headers for health check
+      res.setHeader('Cache-Control', 'public, max-age=5');
+      
       return res.status(200).json({
         status: 'ok',
         timestamp: new Date().toISOString(),
+        version: version,
         message: 'Redis connection successful',
-        version: req.headers['accept-version'] || 'v1'
+        // Include response time for performance monitoring
+        response_time: Date.now() - Number(req.headers['x-vercel-start-time'] || Date.now())
       });
     }
     
     throw new Error('Redis ping failed');
   } catch (error: any) {
-    res.setHeader('Cache-Control', 'no-store');
     return res.status(503).json({
       status: 'error',
       timestamp: new Date().toISOString(),
+      version: version,
       message: 'Redis connection failed',
-      error: 'Database service unavailable',
-      version: req.headers['accept-version'] || 'v1'
+      error: error.message,
+      // Include error code for automated monitoring
+      error_code: 'DB_CONNECTION_FAILED'
     });
   }
 }
 
-async function handleDepsHealth(req: VercelRequest, res: VercelResponse) {
+async function handleDepsHealth(req: VercelRequest, res: VercelResponse, version: string) {
   const services = {
     resend: false,
     redis: false,
@@ -99,8 +86,10 @@ async function handleDepsHealth(req: VercelRequest, res: VercelResponse) {
   const results = {
     status: 'ok' as 'ok' | 'error',
     timestamp: new Date().toISOString(),
+    version: version,
     services,
-    version: req.headers['accept-version'] || 'v1'
+    // Include response time for performance monitoring
+    response_time: Date.now() - Number(req.headers['x-vercel-start-time'] || Date.now())
   };
 
   try {
@@ -122,7 +111,8 @@ async function handleDepsHealth(req: VercelRequest, res: VercelResponse) {
   }
 
   const status = Object.values(services).every(Boolean) ? 200 : 503;
-  // CACHING: Cache dependency health for 15 seconds
-  res.setHeader('Cache-Control', `public, max-age=${status === 200 ? 15 : 0}`);
+  // CACHING: Set cache headers for health check
+  res.setHeader('Cache-Control', 'public, max-age=5');
   res.status(status).json(results);
 }
+---

@@ -1,243 +1,209 @@
 import { useState } from 'react';
+import { z } from 'zod';
 import { useForm } from 'react-hook-form';
-import DOMPurify from 'isomorphic-dompurify';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 
-interface FormData {
-  name: string;
-  email: string;
-  message: string;
-  'bot-field': string;
-}
+const formSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Email is invalid'),
+  message: z.string().min(1, 'Message is required'),
+  // Honeypot field
+  'bot-field': z.string().optional(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 export const ContactForm = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm<FormData>();
+  const prefersReducedMotion = useReducedMotion();
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const onSubmit = async (data: FormData) => {
-    // a11y fix: sanitize input to prevent XSS
-    const cleanData = {
-      name: DOMPurify.sanitize(data.name),
-      email: DOMPurify.sanitize(data.email),
-      message: DOMPurify.sanitize(data.message),
-    };
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    mode: 'onBlur',
+  });
 
+  const onSubmit = async (data: FormValues) => {
+    // If honeypot is filled, silently succeed (spam)
     if (data['bot-field']) {
-      // Honeypot triggered — likely spam
-      setSubmitStatus('success'); // Lie to bots
-      setTimeout(() => setSubmitStatus('idle'), 4000);
+      setIsSubmitted(true);
+      reset();
       return;
     }
 
-    setIsSubmitting(true);
-    setSubmitStatus('idle');
-
+    setSubmitError(null);
     try {
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cleanData),
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          message: data.message,
+        }),
       });
 
-      if (response.ok) {
-        setSubmitStatus('success');
-        reset();
-      } else {
-        setSubmitStatus('error');
+      if (!response.ok) {
+        throw new Error('Failed to send message');
       }
+
+      setIsSubmitted(true);
+      reset();
     } catch (error) {
-      setSubmitStatus('error');
-    } finally {
-      setIsSubmitting(false);
+      setSubmitError('Something went wrong. Please try again later.');
     }
   };
 
   return (
     <section 
       id="contact" 
-      className="section py-20"
+      className="section px-4 py-16 scroll-mt-20"
+      role="region" 
       aria-labelledby="contact-heading"
-      role="region"
     >
-      <div className="max-w-2xl mx-auto px-6">
+      <div className="max-w-2xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
           transition={{ duration: 0.6 }}
+          viewport={{ once: true, margin: "-100px" }}
         >
           <h2 
-            id="contact-heading"
-            className="text-3xl md:text-4xl font-bold mb-4 text-[#1a2e1a] text-center"
+            id="contact-heading" 
+            className="text-3xl font-display font-bold mb-8 text-center text-dark-green"
           >
             Get In Touch
           </h2>
-          <div className="divider mx-auto mb-8" /> {/* a11y fix: visual divider with sufficient contrast */}
-          
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            {/* Honeypot field - hidden from humans, visible to bots */}
-            <div className="absolute left-[-9999px]">
-              <label htmlFor="bot-field">Don't fill this out</label>
-              <input 
-                id="bot-field" 
-                type="text" 
-                {...register('bot-field')} 
-                autoComplete="off"
-              />
-            </div>
 
-            <div className="mb-6">
-              <label 
-                htmlFor="name" 
-                className="block mb-2 font-medium text-[#1a2e1a]"
-              >
-                Your Name
-              </label>
-              <input
-                id="name"
-                type="text"
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-4 transition-all duration-300 ${
-                  errors.name
-                    ? 'border-red-300 focus:ring-red-200'
-                    : 'border-gray-200 focus:ring-[#e66000]/20'
-                }`}
-                placeholder="John Doe"
-                aria-invalid={errors.name ? 'true' : 'false'}
-                aria-describedby={errors.name ? 'name-error' : undefined}
-                {...register('name', { 
-                  required: 'Name is required',
-                  minLength: {
-                    value: 2,
-                    message: 'Name must be at least 2 characters'
-                  }
-                })}
-              />
-              {errors.name && (
-                <p 
-                  id="name-error"
-                  role="alert"
-                  className="mt-2 text-red-600 text-sm"
-                >
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
-
-            <div className="mb-6">
-              <label 
-                htmlFor="email" 
-                className="block mb-2 font-medium text-[#1a2e1a]"
-              >
-                Your Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-4 transition-all duration-300 ${
-                  errors.email
-                    ? 'border-red-300 focus:ring-red-200'
-                    : 'border-gray-200 focus:ring-[#e66000]/20'
-                }`}
-                placeholder="john@example.com"
-                aria-invalid={errors.email ? 'true' : 'false'}
-                aria-describedby={errors.email ? 'email-error' : undefined}
-                {...register('email', { 
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-                    message: 'Email is invalid'
-                  }
-                })}
-              />
-              {errors.email && (
-                <p 
-                  id="email-error"
-                  role="alert"
-                  className="mt-2 text-red-600 text-sm"
-                >
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
-
-            <div className="mb-6">
-              <label 
-                htmlFor="message" 
-                className="block mb-2 font-medium text-[#1a2e1a]"
-              >
-                Your Message
-              </label>
-              <textarea
-                id="message"
-                rows={5}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-4 transition-all duration-300 ${
-                  errors.message
-                    ? 'border-red-300 focus:ring-red-200'
-                    : 'border-gray-200 focus:ring-[#e66000]/20'
-                }`}
-                placeholder="Tell me about your project..."
-                aria-invalid={errors.message ? 'true' : 'false'}
-                aria-describedby={errors.message ? 'message-error' : undefined}
-                {...register('message', { 
-                  required: 'Message is required',
-                  minLength: {
-                    value: 10,
-                    message: 'Message must be at least 10 characters'
-                  }
-                })}
-              />
-              {errors.message && (
-                <p 
-                  id="message-error"
-                  role="alert"
-                  className="mt-2 text-red-600 text-sm"
-                >
-                  {errors.message.message}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full px-8 py-3 bg-[#e66000] text-white rounded-lg font-medium transition-all duration-300 hover:bg-[#ff8c42] focus:outline-none focus:ring-4 focus:ring-[#e66000]/50 disabled:opacity-70 disabled:cursor-not-allowed min-h-11"
-              aria-busy={isSubmitting}
-            >
-              {isSubmitting ? 'Sending...' : 'Send Message'}
-            </button>
-          </form>
-
-          {/* Success message */}
-          {submitStatus === 'success' && (
+          {isSubmitted ? (
             <motion.div
-              className="mt-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg text-center"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
+              className="text-center p-6 bg-green-50 text-green-800 rounded-lg border border-green-200"
               role="alert"
               aria-live="polite"
             >
-              Message sent successfully! I'll get back to you soon.
+              <p className="text-lg font-semibold mb-2">Message sent successfully!</p>
+              <p>Thank you for reaching out. I'll get back to you soon.</p>
             </motion.div>
-          )}
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Honeypot field - hidden from humans */}
+              <div className="hidden">
+                <label htmlFor="bot-field">Don't fill this out</label>
+                <input 
+                  id="bot-field" 
+                  {...register('bot-field')} 
+                  tabIndex={-1} 
+                  autoComplete="off" 
+                />
+              </div>
 
-          {/* Error message */}
-          {submitStatus === 'error' && (
-            <motion.div
-              className="mt-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg text-center"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              role="alert"
-              aria-live="assertive"
-            >
-              Something went wrong. Please try again later.
-            </motion.div>
+              <div>
+                <label 
+                  htmlFor="name" 
+                  className="block text-sm font-medium text-text-dim mb-2"
+                >
+                  Your Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  aria-invalid={errors.name ? "true" : "false"}
+                  aria-describedby={errors.name ? "name-error" : undefined}
+                  className={`w-full px-4 py-3 border border-surface rounded-lg focus:ring-2 focus:ring-accent focus:ring-opacity-50 focus:border-transparent transition-colors ${
+                    errors.name ? 'border-red-300' : 'border-surface'
+                  }`}
+                  {...register('name')}
+                />
+                {errors.name && (
+                  <p 
+                    id="name-error" 
+                    className="mt-1 text-sm text-red-600" 
+                    role="alert"
+                  >
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="email" 
+                  className="block text-sm font-medium text-text-dim mb-2"
+                >
+                  Your Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  aria-invalid={errors.email ? "true" : "false"}
+                  aria-describedby={errors.email ? "email-error" : undefined}
+                  className={`w-full px-4 py-3 border border-surface rounded-lg focus:ring-2 focus:ring-accent focus:ring-opacity-50 focus:border-transparent transition-colors ${
+                    errors.email ? 'border-red-300' : 'border-surface'
+                  }`}
+                  {...register('email')}
+                />
+                {errors.email && (
+                  <p 
+                    id="email-error" 
+                    className="mt-1 text-sm text-red-600" 
+                    role="alert"
+                  >
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label 
+                  htmlFor="message" 
+                  className="block text-sm font-medium text-text-dim mb-2"
+                >
+                  Your Message
+                </label>
+                <textarea
+                  id="message"
+                  rows={5}
+                  aria-invalid={errors.message ? "true" : "false"}
+                  aria-describedby={errors.message ? "message-error" : undefined}
+                  className={`w-full px-4 py-3 border border-surface rounded-lg focus:ring-2 focus:ring-accent focus:ring-opacity-50 focus:border-transparent transition-colors ${
+                    errors.message ? 'border-red-300' : 'border-surface'
+                  }`}
+                  {...register('message')}
+                />
+                {errors.message && (
+                  <p 
+                    id="message-error" 
+                    className="mt-1 text-sm text-red-600" 
+                    role="alert"
+                  >
+                    {errors.message.message}
+                  </p>
+                )}
+              </div>
+
+              {submitError && (
+                <div 
+                  className="p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm"
+                  role="alert"
+                >
+                  {submitError}
+                </div>
+              )}
+
+              <motion.button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-accent text-white py-3 px-6 rounded-lg font-semibold hover:bg-accent-alt transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-opacity-50 tap-target"
+                whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
+                aria-busy={isSubmitting}
+              >
+                {isSubmitting ? 'Sending...' : 'Send Message'}
+              </motion.button>
+            </form>
           )}
         </motion.div>
       </div>
