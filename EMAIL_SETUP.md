@@ -1,34 +1,35 @@
-# 📨 Email Setup Guide
+# 📨 Email Setup Instructions
 
-This app uses **Resend** to send contact form submissions securely via a Vercel serverless function.
+Your portfolio uses **Resend** to deliver contact form submissions securely via a Vercel serverless function.
 
 ## Step 1: Get Your Resend API Key
 1. Go to [https://resend.com](https://resend.com) and sign up or log in.
 2. Create a new project (e.g., "Dev Portfolio").
 3. Navigate to **API Keys** and create a new key.
-4. Copy the key (it will look like `re_123456...`).
+4. Copy the key (it looks like `re_12345...`).
 
 ## Step 2: Set Environment Variables in Vercel
-In your Vercel project dashboard:
+In your Vercel dashboard:
+1. Go to your project → Settings → Environment Variables.
+2. Add the following variables:
 
-### Add These Variables:
 | Key | Value |
 |-----|-------|
-| `RESEND_API_KEY` | Your Resend API key (e.g., `re_123456...`) |
-| `CONTACT_EMAIL` | The email where you want to receive messages (e.g., `you@yourdomain.com`) |
+| `RESEND_API_KEY` | Your Resend API key |
+| `OWNER_EMAIL` | Your personal email (e.g., you@yourportfolio.com) — where form submissions are sent |
 
-> 🔐 **Security Note**: Never use `VITE_RESEND_API_KEY` — that would expose your key in the browser. Only use `RESEND_API_KEY` as a server-side environment variable.
+⚠️ **Important**: Do NOT use `VITE_RESEND_API_KEY` — that would expose the key in the browser. Only server-side env vars are safe.
 
-## Step 3: Verify Your Sending Domain (Critical!)
-1. In Resend Dashboard → **Domains**, click "Add Domain".
-2. Enter your domain (e.g., `your-portfolio.com`).
-3. Add the required DNS records (TXT and CNAME) to your domain provider.
-4. Wait for verification (usually a few minutes).
+## Step 3: Verify Your Sending Domain (Critical for Deliverability)
+1. In Resend dashboard, go to **Domains**.
+2. Click "Add Domain" and enter your portfolio domain (e.g., `yourportfolio.com`).
+3. Follow DNS instructions to add TXT and CNAME records.
+4. Once verified, emails will send from `you@yourportfolio.com` instead of `onboarding@resend.dev`.
 
-> ✉️ Until verified, emails are sent from `onboarding@resend.dev` and may land in spam.
+> 🚨 Without domain verification, emails may land in spam.
 
 ## Step 4: Frontend Integration
-The frontend sends data to `/api/contact` using `fetch()`:
+Your frontend should `POST` to `/api/contact`:
 
 ```ts
 await fetch('/api/contact', {
@@ -38,24 +39,17 @@ await fetch('/api/contact', {
 });
 ```
 
-No client-side email library needed.
+- The honeypot field (`bot-field`) must be present but empty.
+- Use `isomorphic-dompurify` to sanitize inputs before sending.
 
-## Step 5: Test the Flow
-1. Submit the contact form locally or in production.
-2. Check:
-   - You receive the email at `CONTACT_EMAIL`
-   - No errors in Vercel logs
-   - Rate limiting works (6th submission in 1 hour logs but doesn't block)
+## Step 5: Monitor & Debug
+- Check **Vercel Logs** for server-side errors.
+- View email delivery status in **Resend Dashboard → Emails**.
+- Errors are logged to console (and Sentry, if configured).
 
-## Monitoring
-- **Vercel Logs**: Check for errors in `/api/contact`
-- **Resend Dashboard**: View email delivery status
-- **Sentry**: Honeypot triggers and rate limit warnings are logged
-- **PostHog**: Track form submissions and user flow
+## ✅ Test the Flow
+1. Submit the form — expect a success response.
+2. Check your inbox for the confirmation email.
+3. Log into Resend to confirm the notification was sent.
 
-## Optional: Confirmation Email
-To send an auto-reply to users, uncomment the confirmation email logic in `api/contact.ts` and use the `ContactConfirmation` template.
-
----
-
-You're all set! Your portfolio now securely handles contact form submissions with spam protection and rate limiting.
+Need help? Visit [Resend Docs](https://resend.com/docs) or check Vercel logs.

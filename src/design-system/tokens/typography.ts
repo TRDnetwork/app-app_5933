@@ -1,0 +1,54 @@
+/**
+ * Typography tokens for TRD Network design system
+ * Based on Fraunces (display) and Satoshi (body) pairing
+ */
+export const typography = {
+  // Font families
+  'font-display': '"Fraunces", "Georgia", serif',
+  'font-body': '"Satoshi", "Helvetica", "Arial", sans-serif',
+  
+  // Font sizes (rem)
+  'text-xs': '0.75rem',
+  'text-sm': '0.875rem',
+  'text-base': '1rem',
+  'text-lg': '1.125rem',
+  'text-xl': '1.25rem',
+  'text-2xl': '1.5rem',
+  'text-3xl': '1.875rem',
+  'text-4xl': '2.25rem',
+  'text-5xl': '3rem',
+  'text-6xl': '3.75rem',
+  'text-7xl': '4.5rem',
+  'text-8xl': '6rem',
+  'text-9xl': '8rem',
+  
+  // Font weights
+  'font-thin': 100,
+  'font-extralight': 200,
+  'font-light': 300,
+  'font-normal': 400,
+  'font-medium': 500,
+  'font-semibold': 600,
+  'font-bold': 700,
+  'font-extrabold': 800,
+  'font-black': 900,
+  
+  // Line heights
+  'leading-none': '1',
+  'leading-tight': '1.25',
+  'leading-snug': '1.375',
+  'leading-normal': '1.5',
+  'leading-relaxed': '1.625',
+  'leading-loose': '2',
+  
+  // Letter spacing
+  'tracking-tighter': '-0.05em',
+  'tracking-tight': '-0.025em',
+  'tracking-normal': '0',
+  'tracking-wide': '0.025em',
+  'tracking-wider': '0.05em',
+  'tracking-widest': '0.1em',
+} as const;
+
+export type TypographyKey = keyof typeof typography;
+---
