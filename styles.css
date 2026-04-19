@@ -2,31 +2,47 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer components {
-  .btn {
-    @apply px-6 py-3 bg-[#e66000] text-white font-medium rounded-lg shadow-sm hover:bg-[#ff8c42] focus:outline-none focus:ring-2 focus:ring-[#e66000] focus:ring-offset-2 transition-all duration-200;
+@layer base {
+  html {
+    @apply scroll-smooth;
   }
-  .btn-outline {
-    @apply px-6 py-3 border border-[#e66000] text-[#e66000] font-medium rounded-lg hover:bg-[#e66000] hover:text-white focus:outline-none focus:ring-2 focus:ring-[#e66000] focus:ring-offset-2 transition-all duration-200;
+  body {
+    @apply bg-[#faf8f5] text-[#1a2e1a] font-sans leading-relaxed;
+    font-family: 'Satoshi', sans-serif;
   }
-  .input {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e66000] focus:border-transparent;
-  }
-  .card {
-    @apply bg-white p-6 rounded-lg shadow-sm border border-[#e9e5dd] hover:shadow-md transition-all duration-300;
-  }
-  .section {
-    @apply py-20 border-t border-[#e66000] first:border-t-0;
-  }
-  .toast {
-    @apply fixed top-6 right-6 bg-[#1a2e1a] text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+    font-family: 'Fraunces', serif;
+    letter-spacing: -0.05em;
   }
 }
 
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+@layer components {
+  .btn {
+    @apply inline-flex items-center px-6 py-3 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  .btn-primary {
+    @apply bg-[#e66000] text-white hover:bg-[#ff8c42] focus:ring-[#e66000];
+  }
+  .card {
+    @apply bg-white p-6 rounded-lg shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-md hover:translate-y-[-8px];
+  }
+  .divider {
+    @apply border-t border-[#e66000] my-12;
+  }
+  .form-control {
+    @apply w-full mb-4;
+  }
+  .form-input {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e66000] focus:border-transparent transition-all duration-200;
+  }
+  .toast {
+    @apply fixed top-4 right-4 bg-[#1a2e1a] text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-transform duration-300 ease-in-out;
+  }
 }
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out forwards;
+
+@layer utilities {
+  .max-w-5xl {
+    max-width: 64rem;
+  }
 }

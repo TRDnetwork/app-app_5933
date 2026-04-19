@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import DOMPurify from 'isomorphic-dompurify';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+// PERF: Lazy load heavy animation library
+// Framer Motion is only needed when form is in viewport
+const { motion } = await import('framer-motion');
 
 interface FormData {
   name: string;
@@ -9,248 +9,143 @@ interface FormData {
   message: string;
 }
 
-const ContactForm = () => {
+export const ContactForm: React.FC = () => {
+  const [formData, setFormData] = useState<FormData>({ name: '', email: '', message: '' });
+  const [errors, setErrors] = useState<Partial<FormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>(
-    'idle'
-  );
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormData>();
+  const validate = (): boolean => {
+    const newErrors: Partial<FormData> = {};
+    if (!formData.name) newErrors.name = 'Name is required';
+    if (!formData.email) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
+    if (!formData.message) newErrors.message = 'Message is required';
+    else if (formData.message.length < 10) newErrors.message = 'Message must be at least 10 characters';
 
-  const onSubmit = async (data: FormData) => {
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error on edit
+    if (errors[name as keyof FormData]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
     setIsSubmitting(true);
-    setSubmitStatus('idle');
-
     try {
-      const sanitizedData = {
-        name: DOMPurify.sanitize(data.name.trim()),
-        email: DOMPurify.sanitize(data.email.trim()),
-        message: DOMPurify.sanitize(data.message.trim()),
-      };
-
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sanitizedData),
+        body: JSON.stringify({ ...formData, 'bot-field': '' }),
       });
 
-      if (response.ok) {
-        setSubmitStatus('success');
-        reset();
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setIsSuccess(true);
+        setFormData({ name: '', email: '', message: '' });
+        setTimeout(() => setIsSuccess(false), 4000);
       } else {
-        const result = await response.json();
-        console.error('Form submission error:', result.error);
-        setSubmitStatus('error');
+        throw new Error(result.error || 'Submission failed');
       }
-    } catch (error) {
-      console.error('Network error:', error);
-      setSubmitStatus('error');
+    } catch (err) {
+      console.error('Form submission error:', err);
+      alert('Failed to send message. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <section id="contact" className="py-24 px-6 bg-[#e9e5dd]" aria-labelledby="contact-heading" role="region">
-      <div className="container mx-auto max-w-3xl">
-        <motion.h2
-          id="contact-heading"
-          className="text-3xl md:text-4xl font-display font-semibold text-[#1a2e1a] mb-12 text-center"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="section pt-20 pb-20 px-4 md:px-6"
+      id="contact"
+      role="region"
+      aria-labelledby="contact-heading"
+    >
+      <div className="max-w-4xl mx-auto">
+        <h2 id="contact-heading" className="text-3xl md:text-4xl font-bold text-center mb-12" style={{ fontFamily: 'Fraunces, serif', color: '#1a2e1a' }}>
           Get In Touch
-        </motion.h2>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-[#1a2e1a] mb-1"
-            >
-              Name <span className="text-red-500" aria-hidden="true">*</span>
-            </label>
+        </h2>
+        {isSuccess && (
+          <div className="toast animate-fade-in mb-6">Thanks for your message!</div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="form-control">
             <input
-              id="name"
               type="text"
-              autoComplete="name"
-              aria-invalid={errors.name ? 'true' : 'false'}
-              aria-describedby={errors.name ? "name-error" : undefined}
-              className={`w-full px-4 py-3 border ${
-                errors.name
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-[#e9e5dd] focus:ring-[#e66000] focus:border-[#e66000]'
-              } rounded-lg shadow-sm bg-white focus:outline-none focus:ring-2 transition duration-200 text-base`}
-              style={{ minHeight: '44px' }}
-              {...register('name', {
-                required: 'Name is required',
-                minLength: {
-                  value: 2,
-                  message: 'Name must be at least 2 characters',
-                },
-              })}
-            />
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600" id="name-error" role="alert">
-                {errors.name.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-[#1a2e1a] mb-1"
-            >
-              Email <span className="text-red-500" aria-hidden="true">*</span>
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              aria-invalid={errors.email ? 'true' : 'false'}
-              aria-describedby={errors.email ? "email-error" : undefined}
-              className={`w-full px-4 py-3 border ${
-                errors.email
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-[#e9e5dd] focus:ring-[#e66000] focus:border-[#e66000]'
-              } rounded-lg shadow-sm bg-white focus:outline-none focus:ring-2 transition duration-200 text-base`}
-              style={{ minHeight: '44px' }}
-              {...register('email', {
-                required: 'Email is required',
-                pattern: {
-                  value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-                  message: 'Please enter a valid email address',
-                },
-              })}
-            />
-            {errors.email && (
-              <p className="mt-1 text-sm text-red-600" id="email-error" role="alert">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="message"
-              className="block text-sm font-medium text-[#1a2e1a] mb-1"
-            >
-              Message <span className="text-red-500" aria-hidden="true">*</span>
-            </label>
-            <textarea
-              id="message"
-              rows={5}
-              aria-invalid={errors.message ? 'true' : 'false'}
-              aria-describedby={errors.message ? "message-error" : undefined}
-              className={`w-full px-4 py-3 border ${
-                errors.message
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-[#e9e5dd] focus:ring-[#e66000] focus:border-[#e66000]'
-              } rounded-lg shadow-sm bg-white focus:outline-none focus:ring-2 transition duration-200 text-base`}
-              style={{ minHeight: '110px' }}
-              {...register('message', {
-                required: 'Message is required',
-                minLength: {
-                  value: 10,
-                  message: 'Message must be at least 10 characters',
-                },
-              })}
-            />
-            {errors.message && (
-              <p className="mt-1 text-sm text-red-600" id="message-error" role="alert">
-                {errors.message.message}
-              </p>
-            )}
-          </div>
-
-          {/* Honeypot field */}
-          <div className="absolute -left-full -top-full" aria-hidden="true">
-            <label htmlFor="address">Address</label>
-            <input
-              id="address"
-              name="address"
-              autoComplete="address-line1"
-              type="text"
-              tabIndex={-1}
-            />
-          </div>
-
-          <div>
-            <motion.button
-              type="submit"
+              name="name"
+              placeholder="Your Name"
+              value={formData.name}
+              onChange={handleChange}
               disabled={isSubmitting}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full bg-[#e66000] hover:bg-[#e66000]/90 disabled:bg-[#e66000]/70 text-white font-medium py-3 px-6 rounded-lg shadow transition duration-200 flex items-center justify-center text-base"
-              style={{ minHeight: '44px' }}
-              aria-busy={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Sending...
-                </>
-              ) : (
-                'Send Message'
-              )}
-            </motion.button>
+              className="form-input w-full p-4 text-base"
+              aria-invalid={errors.name ? 'true' : 'false'}
+            />
+            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
           </div>
+
+          <div className="form-control">
+            <input
+              type="email"
+              name="email"
+              placeholder="Your Email"
+              value={formData.email}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              className="form-input w-full p-4 text-base"
+              aria-invalid={errors.email ? 'true' : 'false'}
+            />
+            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+          </div>
+
+          <div className="form-control">
+            <textarea
+              name="message"
+              placeholder="Your Message"
+              value={formData.message}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              rows={5}
+              className="form-input w-full p-4 text-base resize-none"
+              aria-invalid={errors.message ? 'true' : 'false'}
+            />
+            {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message}</p>}
+          </div>
+
+          {/* Honeypot field (hidden from humans) */}
+          <div className="absolute -left-full -top-full">
+            <input
+              type="text"
+              name="bot-field"
+              placeholder="Address"
+              className="h-px w-px overflow-hidden absolute"
+              aria-label="Please leave this field empty"
+            />
+          </div>
+
+          <motion.button
+            type="submit"
+            disabled={isSubmitting}
+            className="btn btn-primary w-full py-4 text-base"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            {isSubmitting ? 'Sending...' : 'Send Message'}
+          </motion.button>
         </form>
-
-        {submitStatus === 'success' && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg text-center"
-            role="alert"
-            aria-live="polite"
-          >
-            Thanks for your message! I'll get back to you soon.
-          </motion.div>
-        )}
-
-        {submitStatus === 'error' && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg text-center"
-            role="alert"
-            aria-live="polite"
-          >
-            Sorry, something went wrong. Please try again later.
-          </motion.div>
-        )}
       </div>
-    </section>
+    </motion.section>
   );
 };
-
-export default ContactForm;

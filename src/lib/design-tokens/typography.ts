@@ -1,0 +1,54 @@
+export const typography = {
+  // Font families
+  'font-display': 'Fraunces, serif',
+  'font-body': 'Satoshi, sans-serif',
+  
+  // Font sizes (rem)
+  'text-xs': '0.75rem',
+  'text-sm': '0.875rem',
+  'text-base': '1rem',
+  'text-lg': '1.125rem',
+  'text-xl': '1.25rem',
+  'text-2xl': '1.5rem',
+  'text-3xl': '1.875rem',
+  'text-4xl': '2.25rem',
+  'text-5xl': '3rem',
+  'text-6xl': '3.75rem',
+  'text-7xl': '4.5rem',
+  'text-8xl': '6rem',
+  'text-9xl': '8rem',
+  
+  // Font weights
+  'font-thin': '100',
+  'font-extralight': '200',
+  'font-light': '300',
+  'font-normal': '400',
+  'font-medium': '500',
+  'font-semibold': '600',
+  'font-bold': '700',
+  'font-extrabold': '800',
+  'font-black': '900',
+  
+  // Line heights
+  'leading-3': '0.75rem',
+  'leading-4': '1rem',
+  'leading-5': '1.25rem',
+  'leading-6': '1.5rem',
+  'leading-7': '1.75rem',
+  'leading-8': '2rem',
+  'leading-9': '2.25rem',
+  'leading-10': '2.5rem',
+  'leading-relaxed': '1.625',
+  'leading-loose': '1.75',
+  
+  // Letter spacing
+  'tracking-tighter': '-0.05em',
+  'tracking-tight': '-0.025em',
+  'tracking-normal': '0',
+  'tracking-wide': '0.025em',
+  'tracking-wider': '0.05em',
+  'tracking-widest': '0.1em',
+} as const;
+
+// Type for typography keys
+export type TypographyKey = keyof typeof typography;

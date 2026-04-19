@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://portfolio-pro.vercel.app/sitemap.xml
+Sitemap: https://app_5933.vercel.app/sitemap.xml
+
+# Disallow crawling of admin or API routes
+Disallow: /api/
