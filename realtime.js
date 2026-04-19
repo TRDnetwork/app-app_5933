@@ -1,0 +1,1 @@
+// No realtime functionality needed for this static portfolio site.
