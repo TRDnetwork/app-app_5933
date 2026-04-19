@@ -1,52 +1,47 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 
-const Hero = () => {
+export const Hero: React.FC = () => {
   return (
-    <section 
-      className="py-32 px-4 sm:px-6 text-center min-h-screen flex items-center justify-center" 
-      id="home"
-      role="region"
-      aria-labelledby="hero-heading"
+    <motion.section
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="section text-center py-32"
+      style={{ backgroundColor: '#faf8f5' }}
+      role="banner"
+      aria-label="Hero section featuring Jane Doe, Full-Stack Developer & UI Enthusiast"
     >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="max-w-4xl mx-auto"
-      >
-        <motion.h1 
-          id="hero-heading"
-          className="text-4xl sm:text-5xl md:text-6xl font-display font-bold text-green-darker mb-6 leading-tight"
-          aria-label="Alex Chen, Full-Stack Developer"
+      <div className="max-w-3xl mx-auto px-6">
+        <motion.h1
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 leading-tight"
+          style={{ color: '#1a2e1a', fontFamily: 'Fraunces, serif' }}
+          aria-live="polite"
         >
-          <span className="block">Alex Chen</span>
-          <span className="text-orange text-2xl sm:text-3xl md:text-4xl font-normal mt-2 block">Full-Stack Developer</span>
+          Jane Doe
         </motion.h1>
-        <motion.p 
-          className="text-lg sm:text-xl md:text-2xl text-green-dim max-w-2xl mx-auto leading-relaxed"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
+        <motion.p
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-lg sm:text-xl md:text-2xl text-[#4a4538] mb-8"
+          style={{ fontFamily: 'Satoshi, sans-serif' }}
         >
-          Building performant, accessible web applications with modern React and Node.js. Passionate about clean code, user experience, and scalable architecture.
+          Full-Stack Developer & UI Enthusiast
         </motion.p>
-        <motion.div 
-          className="mt-10 sm:mt-12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
+        <motion.a
+          href="#contact"
+          className="btn inline-block"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          aria-label="Contact me - scroll to contact form"
         >
-          <a 
-            href="#projects" 
-            className="inline-block btn btn-primary text-white hover:bg-orange/90 px-8 py-4 text-base sm:text-lg"
-            aria-label="View featured projects"
-          >
-            View My Work
-          </a>
-        </motion.div>
-      </motion.div>
-    </section>
+          Contact Me
+        </motion.a>
+      </div>
+    </motion.section>
   );
 };
-
-export default Hero;
+---

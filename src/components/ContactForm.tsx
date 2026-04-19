@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-// PERF: Lazy load heavy animation library
-// Framer Motion is only needed when form is in viewport
+// Lazy load Framer Motion for performance
 const { motion } = await import('framer-motion');
 
 interface FormData {
@@ -21,7 +20,6 @@ export const ContactForm: React.FC = () => {
     if (!formData.email) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
     if (!formData.message) newErrors.message = 'Message is required';
-    else if (formData.message.length < 10) newErrors.message = 'Message must be at least 10 characters';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -30,7 +28,6 @@ export const ContactForm: React.FC = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error on edit
     if (errors[name as keyof FormData]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -68,79 +65,111 @@ export const ContactForm: React.FC = () => {
     <motion.section
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      className="section pt-20 pb-20 px-4 md:px-6"
+      viewport={{ once: true, margin: "-100px" }}
+      className="py-24 px-6"
       id="contact"
       role="region"
-      aria-labelledby="contact-heading"
+      aria-labelledby="contact-title"
     >
-      <div className="max-w-4xl mx-auto">
-        <h2 id="contact-heading" className="text-3xl md:text-4xl font-bold text-center mb-12" style={{ fontFamily: 'Fraunces, serif', color: '#1a2e1a' }}>
+      <div className="container mx-auto max-w-4xl">
+        <h2
+          id="contact-title"
+          className="text-3xl sm:text-4xl font-bold text-center mb-12"
+          style={{ fontFamily: 'Fraunces, serif', color: '#1a2e1a' }}
+        >
           Get In Touch
         </h2>
         {isSuccess && (
-          <div className="toast animate-fade-in mb-6">Thanks for your message!</div>
+          <div
+            className="toast animate-fade-in mb-6"
+            role="alert"
+            aria-live="polite"
+          >
+            Message sent successfully!
+          </div>
         )}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           <div className="form-control">
+            <label htmlFor="name-input" className="sr-only">Name</label>
             <input
               type="text"
+              id="name-input"
               name="name"
               placeholder="Your Name"
               value={formData.name}
               onChange={handleChange}
               disabled={isSubmitting}
-              className="form-input w-full p-4 text-base"
-              aria-invalid={errors.name ? 'true' : 'false'}
+              className="input w-full"
+              aria-invalid={!!errors.name}
+              aria-describedby={errors.name ? "name-error" : undefined}
             />
-            {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            {errors.name && (
+              <p id="name-error" className="text-red-500 text-sm mt-1" role="alert">
+                {errors.name}
+              </p>
+            )}
           </div>
 
           <div className="form-control">
+            <label htmlFor="email-input" className="sr-only">Email</label>
             <input
               type="email"
+              id="email-input"
               name="email"
               placeholder="Your Email"
               value={formData.email}
               onChange={handleChange}
               disabled={isSubmitting}
-              className="form-input w-full p-4 text-base"
-              aria-invalid={errors.email ? 'true' : 'false'}
+              className="input w-full"
+              aria-invalid={!!errors.email}
+              aria-describedby={errors.email ? "email-error" : undefined}
             />
-            {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            {errors.email && (
+              <p id="email-error" className="text-red-500 text-sm mt-1" role="alert">
+                {errors.email}
+              </p>
+            )}
           </div>
 
           <div className="form-control">
+            <label htmlFor="message-input" className="sr-only">Message</label>
             <textarea
+              id="message-input"
               name="message"
               placeholder="Your Message"
               value={formData.message}
               onChange={handleChange}
               disabled={isSubmitting}
               rows={5}
-              className="form-input w-full p-4 text-base resize-none"
-              aria-invalid={errors.message ? 'true' : 'false'}
+              className="input w-full"
+              aria-invalid={!!errors.message}
+              aria-describedby={errors.message ? "message-error" : undefined}
             />
-            {errors.message && <p className="text-red-500 text-sm mt-1">{errors.message}</p>}
+            {errors.message && (
+              <p id="message-error" className="text-red-500 text-sm mt-1" role="alert">
+                {errors.message}
+              </p>
+            )}
           </div>
 
           {/* Honeypot field (hidden from humans) */}
-          <div className="absolute -left-full -top-full">
+          <div className="sr-only" aria-hidden="true">
+            <label htmlFor="bot-field">Don't fill this out</label>
             <input
               type="text"
+              id="bot-field"
               name="bot-field"
-              placeholder="Address"
-              className="h-px w-px overflow-hidden absolute"
-              aria-label="Please leave this field empty"
+              tabIndex={-1}
             />
           </div>
 
           <motion.button
             type="submit"
             disabled={isSubmitting}
-            className="btn btn-primary w-full py-4 text-base"
+            className="btn w-full"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            aria-busy={isSubmitting}
           >
             {isSubmitting ? 'Sending...' : 'Send Message'}
           </motion.button>
@@ -149,3 +178,4 @@ export const ContactForm: React.FC = () => {
     </motion.section>
   );
 };
+---

@@ -1,1 +1,2 @@
-// This file is intentionally blank. All logic is in React components.
+// This file is intentionally empty.
+// All logic is handled in React components using TypeScript.

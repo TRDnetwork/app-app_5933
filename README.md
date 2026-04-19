@@ -1,46 +1,21 @@
 # Dev Portfolio
 
-A personal portfolio website for a full-stack developer with a contact form, project showcase, and responsive design.
+A personal portfolio website for a full-stack developer with a clean, animated interface and secure contact form.
 
-## 📄 Overview
+## 🌟 Features
 
-This is a modern, statically generated portfolio built with **React 18**, **Vite**, **TypeScript**, and **Tailwind CSS**, enhanced with smooth animations via **Framer Motion**. The site features a clean, warm minimalism aesthetic and includes a fully functional contact form that sends submissions via **Resend** email with **rate limiting** powered by **Upstash Redis**.
+- **Hero Section**: Displays name and role with smooth entrance animation
+- **About Section**: Concise bio paragraph in warm minimalism styling
+- **Featured Projects**: 3 project cards with title, description, and tech stack
+- **Contact Form**: Client-side validation, spam protection (honeypot + rate limiting), and email delivery via Resend
+- **Responsive Design**: Fully mobile-first layout with Framer Motion scroll animations
+- **Performance Optimized**: Zero external blocking scripts, lazy loading ready
+- **Security Hardened**: Input sanitization, rate limiting, and honeypot spam protection
 
-Deployed on **Vercel**, the architecture leverages serverless functions for dynamic functionality while maintaining excellent performance and security.
+## 🎨 Design Aesthetic
 
----
-
-## ✨ Features
-
-- **Hero Section**: Displays name and role with animated fade-in.
-- **About Section**: Brief bio with elegant typography.
-- **Featured Projects**: Grid of 3 project cards (title, description, tech stack).
-- **Contact Form**:
-  - Client-side validation using React state
-  - Spam protection via honeypot field
-  - Rate limiting: 5 submissions per hour per IP (sliding window via Upstash Redis)
-  - Secure email delivery via Resend (no client-side API keys)
-- **Responsive Design**: Mobile-first layout with adaptive grid (1/2/3 columns)
-- **Smooth Animations**: Scroll-triggered entry animations using Framer Motion
-- **Accessibility & Performance**: Semantic HTML, zero external blocking scripts, lazy loading
-
----
-
-## 🎨 Design System
-
-### Color Palette
-| Role | Hex |
-|------|-----|
-| Background | `#faf8f5` |
-| Text | `#1a2e1a` |
-| Accent | `#e66000` |
-| Secondary Text | `#4a4a4a` |
-
-### Typography
-- **Headings**: `Fraunces`, serif — tight kerning (`letter-spacing: -0.05em`)
-- **Body**: `Satoshi`, sans-serif — optimized readability (`line-height: 1.6`, `max-width: 65ch`)
-
----
+**Warm Minimalism** — serene cream base (`#faf8f5`), deep forest green text (`#1a2e1a`), and vibrant burnt orange accents (`#e66000`).  
+Typography: **Fraunces** (headings) + **Satoshi** (body). Generous whitespace, subtle motion, and clear hierarchy.
 
 ## ⚙️ Tech Stack
 
@@ -48,141 +23,46 @@ Deployed on **Vercel**, the architecture leverages serverless functions for dyna
 |------|------------|
 | Framework | React 18 + Vite |
 | Language | TypeScript |
-| Styling | Tailwind CSS |
+| Styling | Tailwind CSS (via CDN in dev) |
 | Animations | Framer Motion |
-| Email | Resend (serverless) |
+| Email | Resend |
 | Rate Limiting | Upstash Redis |
-| Hosting | Vercel |
 | Monitoring | Sentry, PostHog, Vercel Logs |
+| Deployment | Vercel (Serverless Functions) |
 
----
+## 📦 Setup Instructions
 
-## 🛠️ Setup Instructions
-
-### 1. Clone the Repository
+### 1. Clone & Install
 ```bash
 git clone https://github.com/your-username/dev-portfolio.git
 cd dev-portfolio
-```
-
-### 2. Install Dependencies
-```bash
 npm install
 ```
 
-### 3. Configure Environment Variables
-
-Create a `.env` file in the root:
-
+### 2. Environment Variables
+Create `.env.local`:
 ```env
-RESEND_API_KEY=your_resend_api_key
-UPSTASH_REDIS_REST_URL=your_upstash_redis_url
-UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
-CONTACT_TO_EMAIL=your_email@example.com
+VITE_SITE_URL=https://yourportfolio.com
+RESEND_API_KEY=your_resend_api_key_here
+CONTACT_EMAIL=contact@yourportfolio.com
+UPSTASH_REDIS_REST_URL=https://your-upstash-redis-url
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
 ```
 
-> 🔐 These are **server-side only** — never exposed to the browser.
+> 🔒 Never commit secrets. `RESEND_API_KEY`, `UPSTASH_REDIS_*` are server-only.
 
----
-
-## 🚀 Usage
-
-### Development Server
+### 3. Run Locally
 ```bash
 npm run dev
 ```
-Open [http://localhost:5173](http://localhost:5173) to view it in the browser.
 
-### Build for Production
+### 4. Build & Deploy
 ```bash
 npm run build
-```
-
-### Preview Production Build
-```bash
 npm run preview
 ```
 
----
-
-## 🌐 API Endpoints
-
-### `POST /api/contact` — Submit Contact Form
-
-Sends an email via Resend and applies rate limiting.
-
-#### Request Body
-```json
-{
-  "name": "Jane Doe",
-  "email": "jane@example.com",
-  "message": "Hello! I'd like to collaborate...",
-  "bot-field": "" // honeypot (leave empty)
-}
-```
-
-#### Responses
-| Status | Response |
-|-------|----------|
-| `200 OK` | `{ "success": true, "id": "email_abc123" }` |
-| `400 Bad Request` | `{ "error": "Missing required fields" }` or `{ "error": "Invalid email format" }` |
-| `405 Method Not Allowed` | `{ "error": "Method not allowed" }` |
-| `429 Too Many Requests` | `{ "error": "Rate limit exceeded. Please try again in an hour." }` |
-| `500 Internal Server Error` | `{ "error": "Failed to send email" }` |
-
-#### Example cURL
-```bash
-curl -X POST https://your-portfolio.vercel.app/api/contact \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Alice",
-    "email": "alice@test.com",
-    "message": "Great work! Let's talk.",
-    "bot-field": ""
-  }'
-```
-
----
-
-## 📁 Folder Structure
-```
-dev-portfolio/
-├── api/
-│   └── contact.ts            # Vercel serverless function for email
-├── src/
-│   ├── components/
-│   │   ├── Hero.tsx
-│   │   ├── About.tsx
-│   │   ├── ProjectCard.tsx
-│   │   └── ContactForm.tsx
-│   ├── emails/
-│   │   └── contact-confirmation.js  # Email templates
-│   ├── App.tsx
-│   └── main.tsx
-├── tests/
-│   ├── app.test.js
-│   └── api.test.js
-├── styles.css
-├── index.html
-└── vite.config.ts
-```
-
----
-
-## 📦 Deployment (Vercel)
-
-1. Push code to a GitHub repository.
-2. Import into [Vercel](https://vercel.com).
-3. Add environment variables in the Vercel dashboard:
-   - `RESEND_API_KEY`
-   - `UPSTASH_REDIS_REST_URL`
-   - `UPSTASH_REDIS_REST_TOKEN`
-   - `CONTACT_TO_EMAIL`
-4. Deploy — done!
-
-> ✅ No database, Supabase, or backend server needed.
-
----
+Deploy to Vercel via CLI or Git integration.
 
 ## 🧪 Testing
 
@@ -201,35 +81,98 @@ Coverage report:
 npm run test:coverage
 ```
 
+See `tests/README.md` for full test suite details.
+
+## 📬 Contact Form API
+
+The form submits to a Vercel serverless function with spam protection and rate limiting.
+
+### Endpoint
+```
+POST /api/contact
+```
+
+### Request Body
+```json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "message": "Hello, I'd like to collaborate!",
+  "bot-field": "" // honeypot — leave empty
+}
+```
+
+### Responses
+
+| Code | Response | Description |
+|------|----------|-------------|
+| `200` | `{ "success": true }` | Message sent (or honeypot triggered) |
+| `400` | `{ "error": "All fields are required." }` | Validation failed |
+| `405` | `{ "error": "Method not allowed" }` | Only POST allowed |
+| `429` | `{ "error": "Too many requests..." }` | Rate limited (5/hour/IP) |
+| `500` | `{ "error": "Failed to send message..." }` | Server error |
+
+### Security
+- ✅ Honeypot field (`bot-field`) blocks bots silently
+- ✅ Rate limiting: 5 submissions/hour per IP via Upstash Redis
+- ✅ Input sanitization with `isomorphic-dompurify`
+- ✅ Fail-open mode: allows submissions if Redis fails
+- ✅ Logs errors to Sentry
+
+## 📁 Folder Structure
+```
+dev-portfolio/
+├── api/
+│   └── contact.ts               # Serverless contact handler
+├── src/
+│   ├── components/              # Reusable UI components
+│   ├── emails/                  # Resend email templates
+│   ├── main.tsx                 # App entry point
+│   └── App.tsx                  # Main component
+├── tests/                       # Jest/Vitest test suite
+├── public/                      # Static assets
+├── index.html                   # Root HTML
+└── styles.css                   # Empty (Tailwind via CDN)
+```
+
+## 🚀 Deployment
+
+Deployed on **Vercel** with:
+- Serverless Function: `api/contact.ts`
+- Max Memory: 1024MB
+- Timeout: 10s
+- No caching (dynamic form handling)
+- Health checks via PostHog + Sentry
+
+Ensure environment variables are set in Vercel dashboard.
+
+## 🛡️ Security & Monitoring
+
+- **Spam Protection**: Honeypot + Upstash rate limiting
+- **Input Sanitization**: `isomorphic-dompurify` on all user input
+- **Error Logging**: Sentry for server-side errors
+- **Analytics**: PostHog for user behavior
+- **Email Logs**: Resend dashboard
+- **Rate Limit Logs**: Upstash Redis explorer
+
+See `SECURITY_REPORT.md` for full audit.
+
+## 📈 Performance
+
+- **Bundle Size**: ~118KB (optimized)
+- **Load Time**: <1.5s (LCP)
+- **Optimizations**:
+  - Preconnect to Resend & Upstash domains
+  - Preload critical assets
+  - Lazy-load ready for images
+  - Focus ring optimization to reduce repaints
+
+See `PERFORMANCE_REPORT.md` for details.
+
+## 📧 Email Setup
+
+Follow `EMAIL_SETUP.md` to configure Resend, verify your domain, and set environment variables.
+
 ---
 
-## 🔐 Security & Monitoring
-
-- **Spam Protection**: Honeypot field + Upstash rate limiting (5/hr/IP)
-- **Input Sanitization**: `isomorphic-dompurify` used server-side
-- **Error Handling**: Generic client messages, detailed server logs
-- **Monitoring**:
-  - **Sentry**: Logs server errors
-  - **PostHog**: Tracks form submissions and user flow
-  - **Resend Dashboard**: Email delivery status
-  - **Upstash Console**: Rate limit analytics
-  - **Vercel Logs**: Full API request tracing
-
----
-
-## 📝 Notes
-
-- **No Authentication**: This is a static portfolio — no login or user accounts.
-- **No Database**: All data is either static or transient (email-only).
-- **Fail-Open Rate Limiting**: If Redis fails, form still accepts submissions (logs warning).
-- **Email Templates**: Rendered server-side to prevent XSS and ensure consistency.
-
----
-
-## 📬 Support
-
-For issues or feature requests, please open an issue or contact via the deployed site.
-
----
-
-*Built with care using React, Vite, and Tailwind CSS.*
+Built with ❤️ using React, TypeScript, and Vercel.

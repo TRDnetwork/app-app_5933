@@ -1,85 +1,74 @@
-# 🌐 API Documentation
+# 📡 API Documentation
 
-This project includes a single serverless API endpoint for handling contact form submissions securely.
+## `/api/contact` — Contact Form Endpoint
+
+Handles contact form submissions with spam protection, validation, and email delivery.
+
+> **Base URL**: `https://yourportfolio.com/api/contact`  
+> **Method**: `POST`  
+> **Rate Limit**: 5 requests per hour per IP (via Upstash Redis)  
+> **Authentication**: None (public form)  
+> **Framework**: Vercel Serverless Function (Node.js)
 
 ---
 
-## `POST /api/contact` — Send Contact Message
+### Request
 
-Handles form submission from the frontend, validates input, applies spam protection, and sends an email via **Resend**.
-
-### Method
-`POST`
-
-### URL
+#### Headers
+```http
+Content-Type: application/json
 ```
-https://your-portfolio.vercel.app/api/contact
-```
 
-> Replace with your deployed domain.
-
----
-
-### Request Headers
-| Header | Value |
-|-------|-------|
-| `Content-Type` | `application/json` |
-| `x-forwarded-for` | IP address (set automatically by Vercel) |
-
----
-
-### Request Body
-
+#### Body (JSON)
 | Field | Type | Required | Description |
-|------|------|----------|-------------|
-| `name` | string | ✅ | Full name of the sender |
+|-------|------|----------|-------------|
+| `name` | string | ✅ | Full name of sender |
 | `email` | string | ✅ | Valid email address |
-| `message` | string | ✅ | Message content (min length enforced implicitly) |
-| `bot-field` | string | 🛑 | Honeypot field — must be empty (bots often fill it) |
+| `message` | string | ✅ | Message content (min 10 chars) |
+| `bot-field` | string | ✅ | Honeypot field — must be empty |
 
-#### Example
-```json
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "message": "I love your work! Let's collaborate.",
-  "bot-field": ""
-}
+#### Example Request
+```bash
+curl -X POST https://yourportfolio.com/api/contact \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alex Morgan",
+    "email": "alex@example.com",
+    "message": "I love your work! Let's build something together.",
+    "bot-field": ""
+  }'
 ```
 
 ---
 
 ### Responses
 
-#### ✅ `200 OK` — Success
-Sent when the email is successfully queued by Resend.
+#### ✅ `200 OK` — Success or Honeypot Triggered
+Returned when:
+- Message is successfully sent
+- Honeypot field is filled (silent success to fool bots)
 
 ```json
-{
-  "success": true,
-  "id": "email_abc123xyz"
-}
+{ "success": true }
 ```
 
-> 💡 Even if rate-limited, the server returns `200` **if the honeypot was triggered**, to silently block bots.
+> **Note**: No distinction between real success and honeypot — prevents bot fingerprinting.
 
 ---
 
 #### ❌ `400 Bad Request` — Validation Failed
-Returned when required fields are missing or email is invalid.
+Returned when required fields are missing or invalid.
 
 ```json
-{
-  "error": "Missing required fields"
-}
+{ "error": "All fields are required." }
 ```
 
-or
+```json
+{ "error": "Please provide a valid email address." }
+```
 
 ```json
-{
-  "error": "Invalid email format"
-}
+{ "error": "Message must be at least 10 characters long." }
 ```
 
 ---
@@ -88,130 +77,110 @@ or
 Only `POST` is supported.
 
 ```json
-{
-  "error": "Method not allowed"
-}
+{ "error": "Method not allowed" }
 ```
 
 ---
 
-#### ❌ `429 Too Many Requests` — Rate Limited
-Triggered when the same IP exceeds **5 submissions per hour**.
+#### ❌ `429 Too Many Requests`
+Rate limit exceeded (5/hour per IP).
 
 ```json
-{
-  "error": "Rate limit exceeded. Please try again in an hour."
-}
+{ "error": "Too many requests. Please try again later." }
 ```
 
-> ⚠️ The system operates in **fail-open mode**: if Redis is unreachable, the request proceeds but logs a warning.
+> **Rate Limit Logic**:  
+> - Uses `x-forwarded-for` header for IP detection  
+> - Sliding window via Upstash Redis  
+> - Fail-open: if Redis is unreachable, request proceeds (logged to Sentry)
 
 ---
 
 #### ❌ `500 Internal Server Error`
-Indicates a server-side issue (e.g., Resend outage, unexpected exception).
+Server-side error during email delivery.
 
 ```json
-{
-  "error": "Failed to send email"
-}
+{ "error": "Failed to send message. Please try again." }
 ```
 
-or
-
-```json
-{
-  "error": "Internal server error"
-}
-```
-
-> 🔍 Detailed error logs are sent to **Sentry** and **Vercel Logs** — not exposed to the client.
-
----
-
-### Rate Limiting
-
-- **Provider**: Upstash Redis
-- **Strategy**: Sliding window, 5 requests per 60 minutes
-- **Identifier**: IP address (`x-forwarded-for` or `socket.remoteAddress`)
-- **Behavior**:
-  - Blocks excessive human traffic
-  - Logs warnings on Redis failure (fail-open)
-  - Does not store any personal data long-term
-
----
-
-### Spam Protection
-
-1. **Honeypot Field** (`bot-field`)
-   - Hidden from humans via CSS
-   - If filled, request is silently accepted (`200 OK`) but no email is sent
-   - Prevents bot scraping and spam
-
-2. **Input Sanitization**
-   - All fields sanitized using `isomorphic-dompurify` before email rendering
-   - Prevents XSS in email HTML (e.g., `<script>` tags, `onerror`)
+> **Note**: Full error logged server-side (Sentry), but generic message shown to user for security.
 
 ---
 
 ### Email Delivery
 
-- **Service**: [Resend](https://resend.com)
-- **From**: `onboarding@resend.dev` (or your verified domain)
-- **To**: `process.env.CONTACT_TO_EMAIL`
-- **Reply-To**: Submitted email address
-- **Subject**: `New message from {name} via your portfolio`
-- **HTML Template**: Server-rendered with styled `<div>` layout (see `api/contact.ts`)
+Two emails are sent on successful submission:
+
+#### 1. Notification to Site Owner
+- **From**: `onboarding@resend.dev` (or verified domain)
+- **To**: `CONTACT_EMAIL` (env var)
+- **Subject**: `New message from {name}`
+- **Template**: `src/emails/contact-notification.js`
+- **Content**: Includes name, email, and sanitized message
+
+#### 2. Confirmation to User
+- **From**: `onboarding@resend.dev` (or verified domain)
+- **To**: User's email
+- **Subject**: `We received your message!`
+- **Template**: `src/emails/contact-confirmation.js`
+- **Content**: Thank you message with next steps
 
 ---
 
-### Example cURL Commands
+### Security Measures
 
-#### Valid Submission
-```bash
-curl -X POST https://your-portfolio.vercel.app/api/contact \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Alice Chen",
-    "email": "alice@acme.com",
-    "message": "Your projects are impressive. Interested in freelance work?",
-    "bot-field": ""
-  }'
-```
-
-#### Spam Bot (Honeypot Triggered)
-```bash
-curl -X POST https://your-portfolio.vercel.app/api/contact \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "BotSpammer",
-    "email": "spam@bot.com",
-    "message": "Buy cheap meds!!!",
-    "bot-field": "filled"
-  }'
-```
-> Returns `200 OK` but no email is sent.
+| Feature | Implementation |
+|--------|----------------|
+| **Honeypot** | Hidden `bot-field` — if filled, return 200 silently |
+| **Rate Limiting** | Upstash Redis: 5 req/hour/IP, sliding window |
+| **Input Sanitization** | `isomorphic-dompurify` on all user inputs |
+| **Email Validation** | Regex `/^\S+@\S+\.\S+$/` |
+| **Error Handling** | Generic client errors, detailed server logs |
+| **Secrets** | All API keys via `process.env` — never exposed client-side |
 
 ---
 
 ### Monitoring & Debugging
 
 | Tool | Purpose |
-|------|--------|
-| **Vercel Logs** | Full request/response tracing |
-| **Sentry** | Error tracking and alerts |
-| **PostHog** | Track submission events and user flow |
-| **Resend Dashboard** | Email status (delivered, bounced, etc.) |
-| **Upstash Console** | Rate limit analytics and Redis health |
+|------|---------|
+| **Vercel Logs** | View function execution, errors, and IP tracking |
+| **Sentry** | Capture and alert on server-side exceptions |
+| **PostHog** | Track form submissions and user flow |
+| **Resend Dashboard** | Monitor email delivery status and open rates |
+| **Upstash Console** | Inspect rate limit counters and Redis health |
 
 ---
 
-### Security Headers (Planned Enhancement)
-Currently not set — consider adding:
-```ts
-res.setHeader('X-Content-Type-Options', 'nosniff');
-res.setHeader('X-Frame-Options', 'DENY');
-res.setHeader('Content-Security-Policy', "default-src 'self'");
+### Testing the API
+
+Use the provided Vitest suite:
+```bash
+npm run test:api
 ```
 
-> See [Security Report](../SECURITY_REPORT.md) for details.
+Or manually test with curl:
+```bash
+# Valid submission
+curl -X POST /api/contact -H "Content-Type: application/json" -d '{
+  "name": "Test User",
+  "email": "test@example.com",
+  "message": "Hello world",
+  "bot-field": ""
+}'
+
+# Honeypot test
+curl -X POST /api/contact -H "Content-Type: application/json" -d '{
+  "name": "Bot",
+  "email": "spam@bot.com",
+  "message": "Buy pills!",
+  "bot-field": "filled"
+}' # Should return 200 silently
+
+# Rate limit test (simulate same IP)
+# Call 6 times within 1 hour from same IP → 429
+```
+
+---
+
+🔐 All endpoints are protected against XSS, spam, and abuse. No authentication required.
