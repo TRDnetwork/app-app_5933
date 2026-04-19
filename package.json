@@ -14,11 +14,11 @@
     "framer-motion": "^11.0.0",
     "resend": "^3.2.0",
     "@supabase/supabase-js": "^2.42.0",
-    "api": "latest",
-    "isomorphic-dompurify": "latest",
+    "upstash-ratelimit": "latest",
     "@upstash/redis": "latest",
-    "@upstash/ratelimit": "latest",
-    "react-router-dom": "^6.26.0"
+    "next": "latest",
+    "react-hook-form": "^7.52.0",
+    "isomorphic-dompurify": "latest"
   },
   "devDependencies": {
     "vite": "^5.2.0",

@@ -1,2 +1,1 @@
-// This file is intentionally empty.
-// All logic is handled in React components using TypeScript.
+// This file is not used — React app is in TypeScript with Vite

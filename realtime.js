@@ -1,1 +1,1 @@
-// Not applicable — no Supabase realtime functionality needed.
+// No realtime functionality needed — no Supabase or WebSocket usage
