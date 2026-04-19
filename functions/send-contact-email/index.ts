@@ -1,0 +1,2 @@
+-- Not required — contact form email delivery is handled by Vercel serverless function (api/contact.ts) using Resend and Upstash.
+-- Supabase Edge Functions are not used in this stack.

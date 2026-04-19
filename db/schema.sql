@@ -1,0 +1,3 @@
+-- No database required — contact form handled by Email Agent via Vercel serverless function.
+-- All functionality is client-side or serverless (Resend + Upstash Redis).
+-- No Supabase tables, storage, or edge functions needed.
