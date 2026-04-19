@@ -1,3 +1,3 @@
--- No database required — contact form handled by Email Agent via Vercel serverless function.
--- All functionality is client-side or serverless (Resend + Upstash Redis).
--- No Supabase tables, storage, or edge functions needed.
+-- No database required — all functionality is client-side or handled by Vercel serverless functions.
+-- Contact form submissions are processed by api/contact.ts using Resend for email delivery and Upstash Redis for rate limiting (5/hour/IP).
+-- No tables, storage, or Supabase functions needed.

@@ -1,1 +1,1 @@
--- No seed data needed — no database
+-- No seed data — no database used.

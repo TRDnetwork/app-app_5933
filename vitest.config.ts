@@ -6,20 +6,13 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './tests/setup.ts',
-    include: ['tests/**/*.{test,spec}.{js,ts,jsx,tsx}'],
-    exclude: ['node_modules', 'dist'],
+    setupFiles: './src/setupTests.ts',
+    css: true,
     coverage: {
       provider: 'istanbul',
-      reporter: ['text', 'html'],
-      reportsDirectory: './coverage',
-      include: ['src/**/*.{js,ts,jsx,tsx}'],
-      exclude: [
-        'src/main.tsx',
-        'src/vite-env.d.ts',
-        'src/**/*.d.ts',
-        'src/components/index.ts',
-      ],
-    },
-  },
+      reporter: ['text', 'json', 'html'],
+      exclude: ['node_modules/', 'dist/', 'public/', 'tests/']
+    }
+  }
 });
+---
